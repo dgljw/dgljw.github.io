@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>密码登录</title>
+</head>
+
+<body>
+   <input type="text" id="test" placeholder="请输入账号">
+   <input type="password" id="password" placeholder="请输入密码">
+    <button id="ok">登录</button>
+    <input type="reset" value="重置">
+    <script>
+        var test = document.getElementById("test");
+        var password = document.getElementById("password");
+        var ok = document.getElementById("ok");
+        ok.function() {
+            var testvl = test.value;
+            var passwordvl = password.value;
+            if (testvl == "" || passwordvl == "") {
+                document.getElementById('result').innerText = "账号或密码不能为空";
+                return false;
+            } else if (testvl != "1234") {
+                document.getElementById('result').innerText = "账号输入错误";
+                return false;
+            } else if (passwordvl != "1234") {
+                document.getElementById('result').innerText = "密码输入错误";
+                return false;
+            } else {
+
+                document.getElementById('result').innerText = "登录成功";
+                window.open("https://www.csdn.com/");
+            }
+        }
+    </script>
+    </div>
+
+</html>
