@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>搜索结果</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">  <meta name="robot" content="noindex,nofollow">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #searchForm {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .searchContainer {
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 20px;
+            padding: 5px 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #searchTerm {
+            flex-grow: 1;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        #searchButton {
+            padding: 10px 16px;
+            background-color: #3385ff;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .searchResultsContainer {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .searchResultsWrapper {
+            width: calc(50% - 20px);
+            margin-bottom: 20px;
+        }
+
+        .searchResultsTitle {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .searchResults {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .searchResult {
+            background-color: #fff;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            animation: fadeInAnimation 1s forwards;
+        }
+
+        @keyframes fadeInAnimation {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .searchResult a {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .searchResult a:hover {
+            text-decoration: underline;
+        }
+
+        @media only screen and (max-width: 600px) {
+            #searchForm {
+                flex-wrap: wrap;
+            }
+
+            .searchContainer {
+                width: 100%;
+            }
+
+            .searchResultsWrapper {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>雅舍集合搜索引擎</h1>
+
+    <form id="searchForm">
+        <div class="searchContainer">
+            <input type="text" id="searchTerm" name="searchTerm" placeholder="请输入要搜索的关键词">
+            <button type="button" id="searchButton">搜索</button>
+        </div>
+    </form>
+
+    <div class="searchResultsContainer">
+        <div class="searchResultsWrapper">
+            <h2 class="searchResultsTitle" style="text-align: center;border: 1px solid black;border-radius: 10px;">检索动漫网站</h2>
+            <ul class="searchResults" id="searchResults1"></ul>
+        </div>
+        <div class="searchResultsWrapper">
+            <h2 class="searchResultsTitle" style="text-align: center;border: 1px solid black;border-radius: 10px;">检索galgame网站</h2>
+            <ul class="searchResults" id="searchResults2"></ul>
+        </div>
+        <div class="searchResultsWrapper">
+            <h2 class="searchResultsTitle" style="text-align: center;border: 1px solid black;border-radius: 10px;">检索漫画网站</h2>
+            <ul class="searchResults" id="searchResults3"></ul>
+        </div>
+        <div class="searchResultsWrapper">
+            <h2 class="searchResultsTitle" style="text-align: center;border: 1px solid black;border-radius: 10px;">检索搜索引擎</h2>
+            <ul class="searchResults" id="searchResults4"></ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchButton').addEventListener('click', function(event) {
+            var searchTerm = document.getElementById('searchTerm').value;
+            var resultsContainer1 = document.getElementById('searchResults1');
+            var resultsContainer2 = document.getElementById('searchResults2');
+            var resultsContainer3 = document.getElementById('searchResults3');
+            var resultsContainer4 = document.getElementById('searchResults4');
+
+            resultsContainer1.innerHTML = '';
+            resultsContainer2.innerHTML = '';
+            resultsContainer3.innerHTML = '';
+            resultsContainer4.innerHTML = '';
+
+            var searchSites = [{
+                    name: '啸天动漫',
+                    url: 'https://xtdm1.com/vodsearch/-------------.html?wd=',
+                    partition: 1
+                },
+                {
+                    name: '亿萌动漫',
+                    url: 'https://www.acgyaojun.com/?s=',
+                    partition: 1
+                },
+                {
+                    name: '追风动漫',
+                    url: 'https://www.zhuifengdm.com/vodsearch/-------------.html?wd=',
+                    partition: 1
+                },
+                {
+                    name: 'bilibili',
+                    url: 'https://search.bilibili.com/all?keyword=',
+                    partition: 1
+                },
+                {
+                    name: '月幕galgame',
+                    url: 'https://www.ymgal.games/search?type=article&keyword=',
+                    partition: 2
+                },
+                {
+                    name: 'acg聚焦',
+                    url: 'https://acgjj.cc/search/',
+                    partition: 2
+                },
+                {
+                    name: '好gal',
+                    url: 'https://www.haogal8.com/?s=',
+                    partition: 2
+                },
+                {
+                    name: '喵兔小屋',
+                    url: 'https://miaotu.vip/?s=',
+                    partition: 2
+                },
+                {
+                    name: '漫画之家',
+                    url: 'https://www.dmzj.com/dynamic/',
+                    partition: 3
+                },
+                {
+                    name: '漫画屋',
+                    url: 'https://www.mhua5.com/search?key=',
+                    partition: 3
+                },
+                {
+                    name: 'Goda漫画',
+                    url: 'https://godamanga.com/?s=',
+                    partition: 3
+                },
+                {
+                    name: '漫搜',
+                    url: 'https://www.hisoman.com/msearch.html?keyword=',
+                    partition: 3
+                },
+                {
+                    name: '百度',
+                    url: 'https://www.baidu.com/s?wd=',
+                    partition: 4
+                },
+                {
+                    name: 'bing',
+                    url: 'https://cn.bing.com/search?q=',
+                    partition: 4
+                },
+                {
+                    name: '天霜网盘',
+                    url: 'http://cloud.lxweb.cn/search?keywords=',
+                    partition: 4
+                },
+                {
+                    name: 'Google镜像',
+                    url: 'https://startgoogle.startpagina.nl/?ts=ts3&origin=homepage&query=',
+                    partition: 4
+                },
+                // 添加更多的搜索网站到这里
+            ];
+
+            searchSites.forEach(function(site) {
+                var searchUrl = site.url + encodeURIComponent(searchTerm);
+                var resultsContainer;
+                if (site.partition === 1) {
+                    resultsContainer = resultsContainer1;
+                } else if (site.partition === 2) {
+                    resultsContainer = resultsContainer2;
+                } else if (site.partition === 3) {
+                    resultsContainer = resultsContainer3;
+                } else if (site.partition === 4) {
+                    resultsContainer = resultsContainer4;
+                }
+
+                var searchResult = '<li class="searchResult">' +
+                    '<a href="' + searchUrl + '">' + site.name + '搜索结果</a>' +
+                    '</li>';
+
+                resultsContainer.innerHTML += searchResult;
+            });
+
+            animateSearchResults();
+        });
+
+        function animateSearchResults() {
+            var searchResults = document.getElementsByClassName('searchResult');
+
+            for (var i = 0; i < searchResults.length; i++) {
+                var item = searchResults[i];
+                item.style.animationDelay = (i * 0.2) + 's';
+            }
+        }
+    </script>
+</body>
+
+</html>
