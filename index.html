@@ -30,7 +30,7 @@
   <button id="send-btn" onclick="sendMessage()">发送</button>
   <button class="btn-clear" onclick="clearMemory()">清空记忆</button>
 
-  <script>
+ <script>
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
@@ -90,10 +90,14 @@
       userInput.value = '';
       sendBtn.disabled = true;
 
-      // 2. 创建临时消息容器，用于逐步显示回复
-      const tempDiv = addMessage('assistant', ''); // 最终回答的容器
-      let finalContent = '';          // 累积最终回答文本
-      let finalReasoning = '';        // 累积思考过程文本
+      // 2. 创建两个临时容器：
+      //    thinkingDiv：专门显示思考过程（黄色框）
+      //    replyDiv：专门显示最终回答
+      let thinkingDiv = null;
+      const replyDiv = addMessage('assistant', '');
+
+      let finalContent = '';
+      let finalReasoning = '';
 
       try {
         const res = await fetch('/api/chat', {
@@ -103,7 +107,8 @@
         });
 
         if (!res.ok) {
-          tempDiv.textContent = '请求失败: HTTP ' + res.status;
+          replyDiv.textContent = '请求失败: HTTP ' + res.status;
+          sendBtn.disabled = false;
           return;
         }
 
@@ -123,58 +128,51 @@
               if (data === '[DONE]') continue;
               try {
                 const parsed = JSON.parse(data);
-                // 思考内容
+                
+                // ★ 处理思考内容：创建独立黄色框
                 if (parsed.reasoning_content) {
                   finalReasoning += parsed.reasoning_content;
-                  // 可以实时显示思考过程，这里简单追加到 tempDiv 前面
-                  // 更优雅的做法是另建一个 div，但为了简洁，我们在 tempDiv 文本前显示
-                  const currentText = tempDiv.textContent;
-                  if (!currentText.includes('💭 思考过程:')) {
-                    tempDiv.textContent = '💭 思考过程:\n' + finalReasoning + '\n\n' + finalContent;
+                  if (!thinkingDiv) {
+                    // 第一次收到思考内容时，创建一个黄色框
+                    thinkingDiv = addMessage('assistant', '💭 思考过程:\n' + finalReasoning, true);
                   } else {
-                    // 更新思考部分
-                    tempDiv.textContent = '💭 思考过程:\n' + finalReasoning + '\n\n' + finalContent;
+                    // 后续追加
+                    thinkingDiv.textContent = '💭 思考过程:\n' + finalReasoning;
                   }
                 }
-                // 回答内容
+
+                // ★ 处理回答内容
                 if (parsed.content) {
                   finalContent += parsed.content;
-                  // 更新容器的回答部分
-                  if (finalReasoning) {
-                    tempDiv.textContent = '💭 思考过程:\n' + finalReasoning + '\n\n' + finalContent;
-                  } else {
-                    tempDiv.textContent = finalContent;
-                  }
+                  replyDiv.textContent = finalContent;
                 }
+
               } catch (e) {
-                // 解析失败就当普通文本追加
-                tempDiv.textContent += data;
+                // 解析失败就当普通文本追加到回答框
+                replyDiv.textContent += data;
                 finalContent += data;
               }
             }
           }
-          // 自动滚动
+          // 自动滚动到底部
           chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // 流结束后保存完整消息
+        // 流结束后保存
         const assistantMsg = {
           role: 'assistant',
-          content: finalContent || tempDiv.textContent, // 防止空内容
+          content: finalContent || replyDiv.textContent,
           reasoning_content: finalReasoning || undefined
         };
         conversationHistory.push(assistantMsg);
         saveHistory();
 
-        // 如果没有收到任何内容，显示提示
         if (!finalContent && !finalReasoning) {
-          tempDiv.textContent = '（助手没有返回内容）';
+          replyDiv.textContent = '（助手没有返回内容）';
         }
 
-        // 最终可以把思考过程单独显示为一条前置消息，但这里已合并在一条里，历史加载时也会显示
-
       } catch (err) {
-        tempDiv.textContent = '网络请求失败：' + err.message;
+        replyDiv.textContent = '网络请求失败：' + err.message;
       } finally {
         sendBtn.disabled = false;
       }
