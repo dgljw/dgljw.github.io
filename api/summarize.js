@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
 请按以下JSON格式输出，不要带markdown代码块，只输出JSON本身：
 {
-  "memory_items": ["记忆点1（例如：用户计划去日本旅行，时间在下个月，需要定制行程）", "记忆点2（例如：用户正在开发一个AI聊天应用，项目名为ChatX）"],
+  "memory_items": ["记忆点1", "记忆点2"],
   "summary": "本次对话的摘要内容"
 }`
     },
@@ -41,6 +41,9 @@ export default async function handler(req, res) {
   ];
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 总结30秒超时
+
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
@@ -52,9 +55,12 @@ export default async function handler(req, res) {
         messages: summaryPrompt,
         thinking: { type: 'disabled' },
         stream: false,
-        max_tokens: 500
-      })
+        max_tokens: 500  // 限制总结长度
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return res.status(500).json({ error: '总结请求失败' });
@@ -70,6 +76,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ summary: content, memory_items: [] });
     }
   } catch (error) {
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: '总结请求超时' });
+    }
     return res.status(500).json({ error: '服务器错误', detail: error.message });
   }
 }

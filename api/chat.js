@@ -1,5 +1,5 @@
 // api/chat.js
-export const maxDuration = 60;
+export const maxDuration = 60; // 免费版最大 60 秒
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,6 +18,10 @@ export default async function handler(req, res) {
   });
 
   try {
+    // 设置超时，避免 fetch 长时间等待
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50秒超时，留10秒缓冲
+
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
@@ -28,13 +32,17 @@ export default async function handler(req, res) {
         model: 'deepseek-v4-flash',
         messages: cleanedMessages,
         thinking: { type: 'disabled' },
-        stream: false
-      })
+        stream: false,
+        max_tokens: 2000  // ★ 限制最大生成长度，防止超时
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
-      return res.status(500).json({ error: 'API 请求失败', detail: errorText });
+      return res.status(response.status).json({ error: 'API 请求失败', detail: errorText });
     }
 
     const data = await response.json();
@@ -46,6 +54,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API 返回格式异常', detail: data });
     }
   } catch (error) {
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: '请求超时，请稍后重试' });
+    }
     return res.status(500).json({ error: '服务器内部错误', detail: error.message });
   }
 }
