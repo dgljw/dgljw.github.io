@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DeepSeek 聊天 · 流式思考版</title>
+  <title>DeepSeek 聊天 · 思考折叠版</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 700px; margin: 20px auto; padding: 0 15px; background: #fff; }
     #chat-box { 
@@ -13,10 +13,41 @@
     .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; line-height: 1.5; white-space: pre-wrap; }
     .user { background: #e0f0ff; text-align: right; }
     .assistant { background: #fff; border: 1px solid #eee; }
-    .thinking { 
-      background: #fff9e6; border: 1px dashed #f0c36d; color: #5a4a2f; font-style: italic; 
-      margin-bottom: 4px; 
+
+    /* 思考过程折叠区域 */
+    .thinking-toggle {
+      cursor: pointer;
+      color: #b77d1a;
+      font-size: 0.9em;
+      font-weight: 500;
+      margin-bottom: 4px;
+      user-select: none;
     }
+    .thinking-toggle::before {
+      content: '▶ ';
+      display: inline-block;
+      transition: transform 0.15s;
+      font-size: 0.8em;
+      margin-right: 2px;
+    }
+    .thinking-toggle.open::before {
+      transform: rotate(90deg);
+    }
+    .thinking-content {
+      background: #fff9e6;
+      border: 1px dashed #f0c36d;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      color: #5a4a2f;
+      font-style: italic;
+      display: none;
+      white-space: pre-wrap;
+    }
+    .thinking-content.open {
+      display: block;
+    }
+
     textarea { width: 100%; padding: 10px; resize: vertical; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
     button { padding: 10px 20px; border: none; background: #111; color: white; border-radius: 8px; cursor: pointer; margin-top: 5px; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -24,163 +55,158 @@
   </style>
 </head>
 <body>
-  <h2>🤖 DeepSeek V4 Pro（流式 + 思考过程）</h2>
+  <h2>🤖 DeepSeek V4 Pro（思考折叠）</h2>
   <div id="chat-box"></div>
   <textarea id="user-input" rows="3" placeholder="输入你的消息，Ctrl+Enter 发送..."></textarea><br>
   <button id="send-btn" onclick="sendMessage()">发送</button>
   <button class="btn-clear" onclick="clearMemory()">清空记忆</button>
 
-<script>
-  const chatBox = document.getElementById('chat-box');
-  const userInput = document.getElementById('user-input');
-  const sendBtn = document.getElementById('send-btn');
+  <script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
 
-  const STORAGE_KEY = 'deepseek_chat_history';
+    const STORAGE_KEY = 'deepseek_chat_history';
 
-  function saveHistory() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory));
-    } catch (e) { console.error('保存历史记录失败', e); }
-  }
-
-  function loadHistory() {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('加载历史记录失败', e);
-      return [];
+    function saveHistory() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory));
+      } catch (e) { console.error('保存历史记录失败', e); }
     }
-  }
 
-  let conversationHistory = loadHistory();
-  if (conversationHistory.length > 0) {
-    conversationHistory.forEach(msg => {
-      if (msg.role === 'assistant' && msg.reasoning_content) {
-        addMessage('assistant', '💭 思考过程:\n' + msg.reasoning_content, true);
-      }
-      addMessage(msg.role, msg.content);
-    });
-  }
+    function loadHistory() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) { console.error('加载历史记录失败', e); return []; }
+    }
 
-  function clearMemory() {
-    conversationHistory = [];
-    localStorage.removeItem(STORAGE_KEY);
-    chatBox.innerHTML = '';
-    addMessage('assistant', '记忆已清空，开始新的对话吧。');
-  }
+    let conversationHistory = loadHistory();
 
-  userInput.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 'Enter') sendMessage();
-  });
-
-  async function sendMessage() {
-    const text = userInput.value.trim();
-    if (!text) return;
-
-    conversationHistory.push({ role: 'user', content: text });
-    saveHistory();
-    addMessage('user', text);
-    userInput.value = '';
-    sendBtn.disabled = true;
-
-    const replyDiv = addMessage('assistant', '');
-    let finalContent = '';
-    let finalReasoning = '';
-    let doneReceived = false; // 是否收到 [DONE]
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: conversationHistory })
-      });
-
-      if (!res.ok) {
-        replyDiv.textContent = '请求失败: HTTP ' + res.status;
-        sendBtn.disabled = false;
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              doneReceived = true;
-              continue;
-            }
-            try {
-              const parsed = JSON.parse(data);
-              
-              if (parsed.reasoning_content) {
-                finalReasoning += parsed.reasoning_content;
-              }
-              if (parsed.content) {
-                finalContent += parsed.content;
-              }
-
-              if (finalReasoning && finalContent) {
-                replyDiv.textContent = '💭 思考过程：\n' + finalReasoning + '\n\n' + finalContent;
-              } else if (finalReasoning) {
-                replyDiv.textContent = '💭 思考过程：\n' + finalReasoning;
-              } else if (finalContent) {
-                replyDiv.textContent = finalContent;
-              } else {
-                replyDiv.textContent = '...';
-              }
-
-            } catch (e) {
-              // 解析失败就附加原始数据
-              replyDiv.textContent += data;
-              finalContent += data;
-            }
-          }
+    // 页面加载时渲染历史
+    if (conversationHistory.length > 0) {
+      conversationHistory.forEach(msg => {
+        if (msg.role === 'user') {
+          addMessage('user', msg.content);
+        } else if (msg.role === 'assistant') {
+          addAssistantMessage(msg.content, msg.reasoning_content);
         }
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
-
-      // 如果自然结束，且还有内容没显示，就最终保存
-      const assistantMsg = {
-        role: 'assistant',
-        content: finalContent || replyDiv.textContent || '',
-        reasoning_content: finalReasoning || undefined
-      };
-      conversationHistory.push(assistantMsg);
-      saveHistory();
-
-      if (!finalContent && !finalReasoning) {
-        replyDiv.textContent = '（助手没有返回内容）';
-      } else if (!doneReceived && finalContent) {
-        // 没有收到 [DONE] 但有内容，说明中途断开了，给个提示
-        replyDiv.textContent += '\n\n⚠️ 回答因超时或网络原因中断';
-      }
-
-    } catch (err) {
-      replyDiv.textContent = '网络请求失败：' + err.message;
-    } finally {
-      sendBtn.disabled = false;
+      });
     }
-  }
 
-  function addMessage(role, content, isThinking = false) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + role;
-    if (isThinking) div.classList.add('thinking');
-    div.textContent = content;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    return div;
-  }
-</script>
+    function clearMemory() {
+      conversationHistory = [];
+      localStorage.removeItem(STORAGE_KEY);
+      chatBox.innerHTML = '';
+      addMessage('assistant', '记忆已清空，开始新的对话吧。');
+    }
+
+    userInput.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 'Enter') sendMessage();
+    });
+
+    // 发送消息（非流式）
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      // 添加用户消息
+      conversationHistory.push({ role: 'user', content: text });
+      saveHistory();
+      addMessage('user', text);
+      userInput.value = '';
+      sendBtn.disabled = true;
+
+      // 创建“思考中...”占位容器
+      const container = document.createElement('div');
+      container.className = 'msg assistant';
+      container.innerHTML = '<span style="color:#888;">💭 思考中...</span>';
+      chatBox.appendChild(container);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversationHistory })
+        });
+
+        if (!res.ok) {
+          container.innerHTML = `<span style="color:red;">请求失败: HTTP ${res.status}</span>`;
+          sendBtn.disabled = false;
+          return;
+        }
+
+        const data = await res.json();
+
+        if (data.reply) {
+          // 移除思考中占位
+          container.remove();
+
+          // 添加带折叠思考的助手消息
+          addAssistantMessage(data.reply, data.reasoning_content);
+
+          // 保存到历史
+          const assistantMsg = {
+            role: 'assistant',
+            content: data.reply,
+            reasoning_content: data.reasoning_content || undefined
+          };
+          conversationHistory.push(assistantMsg);
+          saveHistory();
+        } else {
+          container.innerHTML = `<span style="color:red;">出错啦：${data.error || '未知错误'}</span>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<span style="color:red;">网络请求失败：${err.message}</span>`;
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // 添加一条助手消息，支持折叠思考过程
+    function addAssistantMessage(content, reasoning) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'msg assistant';
+
+      // 如果有思考内容，先添加可折叠区域
+      if (reasoning) {
+        const toggle = document.createElement('div');
+        toggle.className = 'thinking-toggle';
+        toggle.textContent = '思考过程';
+        toggle.addEventListener('click', function() {
+          const thinkDiv = this.nextElementSibling;
+          if (thinkDiv) {
+            thinkDiv.classList.toggle('open');
+            this.classList.toggle('open');
+          }
+        });
+
+        const thinkContent = document.createElement('div');
+        thinkContent.className = 'thinking-content';
+        thinkContent.textContent = reasoning;
+
+        wrapper.appendChild(toggle);
+        wrapper.appendChild(thinkContent);
+      }
+
+      // 添加回答内容
+      const replyDiv = document.createElement('div');
+      replyDiv.textContent = content || '（没有返回回答内容）';
+      wrapper.appendChild(replyDiv);
+
+      chatBox.appendChild(wrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // 普通消息（用户消息或纯文本）
+    function addMessage(role, content) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      div.textContent = content;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
 </body>
 </html>
