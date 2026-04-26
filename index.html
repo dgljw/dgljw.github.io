@@ -57,7 +57,7 @@
     <button id="send-btn" onclick="sendMessage()">发送</button>
   </div>
 
-  <script>
+ <script>
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
@@ -66,15 +66,14 @@
     const personaLabel = document.getElementById('personaLabel');
 
     // ==================== 配置 ====================
-    const STORAGE_KEY = 'deepseek_chat_memory_v2';
+    const STORAGE_KEY = 'deepseek_chat_memory_v3';
     const PERSONA_KEY = 'deepseek_persona';
-    const MAX_HISTORY_TOKENS = 50000; // ★ 提高到 50,000 tokens，充分发挥模型1M上下文优势
+    const MAX_HISTORY_TOKENS = 50000;
 
     // ==================== 全局状态 ====================
     let systemPersona = loadPersona();
     renderPersonaLabel();
 
-    // 新的对话结构，包含记忆体
     let conversationData = loadConversationData();
     let conversationHistory = conversationData.history;
     let memoryItems = conversationData.memory_items || [];
@@ -144,7 +143,7 @@
       } catch (e) { return { history: [], memory_items: [] }; }
     }
 
-    // ==================== 智能记忆压缩（异步、高门限） ====================
+    // ==================== 智能记忆压缩 ====================
     function estimateTokens(text) {
       const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
       const otherChars = text.length - chineseChars;
@@ -157,15 +156,12 @@
       return total;
     }
 
-    // ★ 核心改动：高门限 + 异步非阻塞
     async function smartCompressHistory() {
       const totalTokens = getTotalTokens(conversationHistory);
       if (totalTokens <= MAX_HISTORY_TOKENS) return;
 
-      // 创建后台任务，不阻塞当前 sendMessage 流程
       const backgroundTask = async () => {
         try {
-          // 准备总结所需数据（不要修改历史）
           const allMessagesForSummary = [...conversationHistory];
 
           const res = await fetch('/api/summarize', {
@@ -183,10 +179,8 @@
           const newMemoryItems = data.memory_items || [];
           const summary = data.summary || '';
 
-          // 合并记忆
           memoryItems = [...new Set([...memoryItems, ...newMemoryItems])];
 
-          // ★ 重构历史：人设 + 记忆 + 摘要 + 最近对话(50条)
           const recentHistory = conversationHistory.slice(-50);
           const newHistory = [];
           if (systemPersona) {
@@ -203,18 +197,15 @@
           conversationHistory = newHistory;
           saveConversationData();
 
-          // 可选：给用户一个提示
           displayBackgroundMessage('🧠 记忆已在后台完成自动整合。');
         } catch (err) {
           console.error('后台记忆压缩失败', err);
         }
       };
 
-      // 异步启动后台任务，不阻塞
       backgroundTask();
     }
 
-    // 显示后台提示（不影响对话流）
     function displayBackgroundMessage(text) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'msg assistant';
@@ -229,10 +220,8 @@
       const text = userInput.value.trim();
       if (!text) return;
 
-      // 1. 先异步触发后台压缩（非阻塞）
       smartCompressHistory();
 
-      // 2. 正常发送用户消息
       conversationHistory.push({ role: 'user', content: text });
       saveConversationData();
       addMessage('user', text);
@@ -250,17 +239,13 @@
       chatBox.appendChild(loadingDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      // 构建API调用消息
       const apiMessages = [];
-      // 1. 人设
       if (systemPersona) {
         apiMessages.push({ role: 'system', content: systemPersona });
       }
-      // 2. 长期记忆点 (如果存在)
       if (memoryItems.length > 0) {
         apiMessages.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
       }
-      // 3. 当前对话历史
       conversationHistory.forEach(msg => apiMessages.push(msg));
 
       try {
@@ -294,10 +279,19 @@
       }
     }
 
+    // ★ 核心改动：助手消息用 innerHTML 渲染 Markdown
     function addMessage(role, content, animate = true) {
       const div = document.createElement('div');
       div.className = `msg ${role}`;
-      div.textContent = content;
+      
+      if (role === 'assistant') {
+        // 使用 marked 库将 Markdown 转为 HTML
+        div.innerHTML = marked.parse(content);
+      } else {
+        // 用户消息保持纯文本，防止 XSS
+        div.textContent = content;
+      }
+      
       if (!animate) div.style.animation = 'none';
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
