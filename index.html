@@ -66,20 +66,18 @@
     const personaLabel = document.getElementById('personaLabel');
 
     // ==================== 配置 ====================
-    const STORAGE_KEY = 'deepseek_chat_memory_v1';
+    const STORAGE_KEY = 'deepseek_chat_memory_v2';
     const PERSONA_KEY = 'deepseek_persona';
-    const MAX_HISTORY_TOKENS = 6000; // 设置一个Token预算，超出则压缩
-    const TOKENS_TO_KEEP = 2000; // 压缩后，保留最近的约2000个Token的对话
+    const MAX_HISTORY_TOKENS = 50000; // ★ 提高到 50,000 tokens，充分发挥模型1M上下文优势
 
     // ==================== 全局状态 ====================
     let systemPersona = loadPersona();
     renderPersonaLabel();
 
-    // 新的对话结构，包含记忆体和摘要
+    // 新的对话结构，包含记忆体
     let conversationData = loadConversationData();
     let conversationHistory = conversationData.history;
     let memoryItems = conversationData.memory_items || [];
-    let conversationSummary = conversationData.summary || '';
 
     // 初始化渲染
     renderAllMessages();
@@ -124,10 +122,9 @@
     function clearMemory() {
       conversationHistory = [];
       memoryItems = [];
-      conversationSummary = '';
       saveConversationData();
       chatBox.innerHTML = '';
-      addMessage('assistant', '所有记忆已清空，包括长期记忆和摘要。', false);
+      addMessage('assistant', '所有记忆已清空，包括长期记忆。', false);
     }
 
     // ==================== 数据持久化 ====================
@@ -136,7 +133,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           history: conversationHistory,
           memory_items: memoryItems,
-          summary: conversationSummary
         }));
       } catch (e) { console.error('保存数据失败', e); }
     }
@@ -144,14 +140,12 @@
     function loadConversationData() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : { history: [], memory_items: [], summary: '' };
-      } catch (e) { return { history: [], memory_items: [], summary: '' }; }
+        return saved ? JSON.parse(saved) : { history: [], memory_items: [] };
+      } catch (e) { return { history: [], memory_items: [] }; }
     }
 
-    // ==================== 智能记忆压缩 ====================
-    // 简单的Token估算函数（基于字符，假设1 token ≈ 2 英文/标点，1 token ≈ 1.5 中文）
+    // ==================== 智能记忆压缩（异步、高门限） ====================
     function estimateTokens(text) {
-      // 粗略估算：中文约1.5个字符 / token，英文标点约2个
       const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
       const otherChars = text.length - chineseChars;
       return Math.ceil(chineseChars / 1.5 + otherChars / 2);
@@ -163,77 +157,71 @@
       return total;
     }
 
+    // ★ 核心改动：高门限 + 异步非阻塞
     async function smartCompressHistory() {
       const totalTokens = getTotalTokens(conversationHistory);
       if (totalTokens <= MAX_HISTORY_TOKENS) return;
 
-      sendBtn.disabled = true;
-      sendBtn.innerHTML = '<span class="spinner"></span>压缩记忆';
+      // 创建后台任务，不阻塞当前 sendMessage 流程
+      const backgroundTask = async () => {
+        try {
+          // 准备总结所需数据（不要修改历史）
+          const allMessagesForSummary = [...conversationHistory];
 
-      try {
-        // 提取最近不超过2000 Token的对话
-        const recentHistory = [];
-        let recentTokens = 0;
-        for (let i = conversationHistory.length - 1; i >= 0; i--) {
-          const msgTokens = estimateTokens(conversationHistory[i].content);
-          if (recentTokens + msgTokens > TOKENS_TO_KEEP) break;
-          recentHistory.unshift(conversationHistory[i]);
-          recentTokens += msgTokens;
+          const res = await fetch('/api/summarize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: allMessagesForSummary,
+              existingMemory: memoryItems
+            })
+          });
+
+          if (!res.ok) throw new Error('总结失败');
+
+          const data = await res.json();
+          const newMemoryItems = data.memory_items || [];
+          const summary = data.summary || '';
+
+          // 合并记忆
+          memoryItems = [...new Set([...memoryItems, ...newMemoryItems])];
+
+          // ★ 重构历史：人设 + 记忆 + 摘要 + 最近对话(50条)
+          const recentHistory = conversationHistory.slice(-50);
+          const newHistory = [];
+          if (systemPersona) {
+            newHistory.push({ role: 'system', content: systemPersona });
+          }
+          if (memoryItems.length > 0) {
+            newHistory.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
+          }
+          if (summary) {
+            newHistory.push({ role: 'system', content: `[对话摘要]\n${summary}` });
+          }
+          newHistory.push(...recentHistory);
+
+          conversationHistory = newHistory;
+          saveConversationData();
+
+          // 可选：给用户一个提示
+          displayBackgroundMessage('🧠 记忆已在后台完成自动整合。');
+        } catch (err) {
+          console.error('后台记忆压缩失败', err);
         }
+      };
 
-        // 准备发送给总结API的历史（包含旧记忆体、摘要和所有历史对话）
-        const systemMessages = [];
-        if (memoryItems.length > 0) {
-          systemMessages.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
-        }
-        if (conversationSummary) {
-          systemMessages.push({ role: 'system', content: `[上轮摘要]\n${conversationSummary}` });
-        }
+      // 异步启动后台任务，不阻塞
+      backgroundTask();
+    }
 
-        const allMessagesForSummary = [...systemMessages, ...conversationHistory];
-
-        const res = await fetch('/api/summarize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: allMessagesForSummary,
-            existingMemory: memoryItems
-          })
-        });
-
-        if (!res.ok) throw new Error('总结失败');
-
-        const data = await res.json();
-        memoryItems = data.memory_items || [];
-        conversationSummary = data.summary || '';
-
-        // 用新记忆和摘要重构历史
-        const newHistory = [];
-        if (systemPersona) {
-          newHistory.push({ role: 'system', content: systemPersona });
-        }
-        if (memoryItems.length > 0) {
-          newHistory.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
-        }
-        if (conversationSummary) {
-          newHistory.push({ role: 'system', content: `[对话摘要]\n${conversationSummary}` });
-        }
-        newHistory.push(...recentHistory);
-
-        conversationHistory = newHistory;
-        saveConversationData();
-
-        // 刷新界面
-        chatBox.innerHTML = '';
-        renderAllMessages();
-        addMessage('assistant', '🧠 记忆已自动压缩并更新长期记忆点。', false);
-      } catch (err) {
-        console.error('压缩记忆失败', err);
-        addMessage('assistant', '⚠️ 记忆压缩失败，但对话仍可继续。');
-      } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = '发送';
-      }
+    // 显示后台提示（不影响对话流）
+    function displayBackgroundMessage(text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'msg assistant';
+      msgDiv.textContent = text;
+      msgDiv.style.opacity = '0.8';
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     // ==================== 聊天核心 ====================
@@ -241,9 +229,10 @@
       const text = userInput.value.trim();
       if (!text) return;
 
-      await smartCompressHistory();
+      // 1. 先异步触发后台压缩（非阻塞）
+      smartCompressHistory();
 
-      // 添加用户消息
+      // 2. 正常发送用户消息
       conversationHistory.push({ role: 'user', content: text });
       saveConversationData();
       addMessage('user', text);
@@ -267,11 +256,11 @@
       if (systemPersona) {
         apiMessages.push({ role: 'system', content: systemPersona });
       }
-      // 2. 长期记忆点
+      // 2. 长期记忆点 (如果存在)
       if (memoryItems.length > 0) {
-        apiMessages.push({ role: 'system', content: `[还记得关于用户的关键信息]\n${memoryItems.join('\n')}` });
+        apiMessages.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
       }
-      // 3. 对话上下文（历史中可能包含摘要和system消息，都带入）
+      // 3. 当前对话历史
       conversationHistory.forEach(msg => apiMessages.push(msg));
 
       try {
