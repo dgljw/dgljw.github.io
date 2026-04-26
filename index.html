@@ -118,23 +118,11 @@
       align-self: flex-start;
     }
 
-    /* 头像 */
+    /* Emoji 头像 */
     .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 1rem;
-      color: white;
+      font-size: 1.8rem;
       flex-shrink: 0;
-      background: #007aff;
-    }
-
-    .avatar.user-avatar {
-      background: #34c759;
+      line-height: 1;
     }
 
     /* 消息气泡 */
@@ -294,7 +282,7 @@
       color: #555;
     }
 
-    .setting-item input, .setting-item select {
+    .setting-item input {
       padding: 10px 14px;
       border: 1px solid #ddd;
       border-radius: 16px;
@@ -310,15 +298,9 @@
       margin-bottom: 12px;
     }
 
-    .avatar-preview .preview-circle {
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 1.2rem;
+    .avatar-preview .preview-emoji {
+      font-size: 2rem;
+      line-height: 1;
     }
 
     .modal-actions {
@@ -366,31 +348,23 @@
       <h3>⚙️ 设置</h3>
 
       <div class="setting-item">
-        <label>你的头像风格</label>
-        <select id="userAvatarType">
-          <option value="letter">字母</option>
-          <option value="emoji">默认表情</option>
-          <option value="color">纯色</option>
-        </select>
+        <label>你的头像 (Emoji)</label>
+        <input type="text" id="userAvatarInput" placeholder="😊" maxlength="4">
       </div>
 
       <div class="setting-item">
-        <label>AI 头像风格</label>
-        <select id="aiAvatarType">
-          <option value="letter">字母</option>
-          <option value="emoji">默认表情</option>
-          <option value="color">纯色</option>
-        </select>
+        <label>AI 头像 (Emoji)</label>
+        <input type="text" id="aiAvatarInput" placeholder="🤖" maxlength="4">
       </div>
 
       <div class="avatar-preview">
         <div>
           <div style="font-size:0.8rem; margin-bottom:4px;">你</div>
-          <div class="preview-circle" id="userPreviewAvatar" style="background:#34c759;">你</div>
+          <div class="preview-emoji" id="userPreviewAvatar">😊</div>
         </div>
         <div>
           <div style="font-size:0.8rem; margin-bottom:4px;">AI</div>
-          <div class="preview-circle" id="aiPreviewAvatar" style="background:#007aff;">AI</div>
+          <div class="preview-emoji" id="aiPreviewAvatar">🤖</div>
         </div>
       </div>
 
@@ -414,26 +388,25 @@
     const aiNameInput = document.getElementById('aiNameInput');
     const settingsOverlay = document.getElementById('settingsOverlay');
     const personaInput = document.getElementById('personaInput');
-    const userAvatarType = document.getElementById('userAvatarType');
-    const aiAvatarType = document.getElementById('aiAvatarType');
+    const userAvatarInput = document.getElementById('userAvatarInput');
+    const aiAvatarInput = document.getElementById('aiAvatarInput');
     const userPreviewAvatar = document.getElementById('userPreviewAvatar');
     const aiPreviewAvatar = document.getElementById('aiPreviewAvatar');
 
     // ==================== 配置 ====================
-    const STORAGE_KEY = 'deepseek_chat_memory_v4';
-    const SETTINGS_KEY = 'deepseek_settings';
+    const STORAGE_KEY = 'deepseek_chat_memory_v5';
+    const SETTINGS_KEY = 'deepseek_settings_v2';
 
     // 默认设置
     let settings = loadSettings();
     applySettingsToUI();
 
-    // 应用设置到 UI
     function applySettingsToUI() {
       aiNameInput.value = settings.aiName || 'DeepSeek';
       personaInput.value = settings.persona || '';
-      userAvatarType.value = settings.userAvatar || 'letter';
-      aiAvatarType.value = settings.aiAvatar || 'letter';
-      updateAvatarPreviews();
+      userAvatarInput.value = settings.userAvatar || '😊';
+      aiAvatarInput.value = settings.aiAvatar || '🤖';
+      updateEmojiPreviews();
     }
 
     function loadSettings() {
@@ -442,32 +415,23 @@
         return saved ? JSON.parse(saved) : {
           aiName: 'DeepSeek',
           persona: '',
-          userAvatar: 'letter',
-          aiAvatar: 'letter'
+          userAvatar: '😊',
+          aiAvatar: '🤖'
         };
-      } catch (e) { return { aiName: 'DeepSeek', persona: '', userAvatar: 'letter', aiAvatar: 'letter' }; }
+      } catch (e) { return { aiName: 'DeepSeek', persona: '', userAvatar: '😊', aiAvatar: '🤖' }; }
     }
 
     function saveSettingsToStorage() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     }
 
-    // 更新头像预览
-    function updateAvatarPreviews() {
-      const userType = userAvatarType.value;
-      const aiType = aiAvatarType.value;
-      userPreviewAvatar.textContent = getAvatarText('用户', userType);
-      aiPreviewAvatar.textContent = getAvatarText(settings.aiName || 'AI', aiType);
+    // Emoji 预览更新
+    function updateEmojiPreviews() {
+      userPreviewAvatar.textContent = userAvatarInput.value || '😊';
+      aiPreviewAvatar.textContent = aiAvatarInput.value || '🤖';
     }
-
-    function getAvatarText(name, type) {
-      if (type === 'letter') return name.charAt(0).toUpperCase();
-      if (type === 'emoji') return '😊';
-      return '?';
-    }
-
-    userAvatarType.addEventListener('change', updateAvatarPreviews);
-    aiAvatarType.addEventListener('change', updateAvatarPreviews);
+    userAvatarInput.addEventListener('input', updateEmojiPreviews);
+    aiAvatarInput.addEventListener('input', updateEmojiPreviews);
 
     // 全局状态
     let systemPersona = settings.persona;
@@ -484,7 +448,6 @@
       settings.aiName = this.value;
       aiName = this.value;
       saveSettingsToStorage();
-      updateAvatarPreviews(); // 头像字母跟着变
     });
 
     userInput.addEventListener('input', function() {
@@ -499,15 +462,8 @@
       }
     });
 
-    function openSettings() {
-      settingsOverlay.classList.add('open');
-    }
-
-    function closeSettings() {
-      settingsOverlay.classList.remove('open');
-    }
-
-    // 点击遮罩关闭
+    function openSettings() { settingsOverlay.classList.add('open'); }
+    function closeSettings() { settingsOverlay.classList.remove('open'); }
     settingsOverlay.addEventListener('click', function(e) {
       if (e.target === settingsOverlay) closeSettings();
     });
@@ -515,10 +471,12 @@
     function saveSettings() {
       settings.persona = personaInput.value.trim();
       systemPersona = settings.persona;
-      settings.userAvatar = userAvatarType.value;
-      settings.aiAvatar = aiAvatarType.value;
+      settings.userAvatar = userAvatarInput.value || '😊';
+      settings.aiAvatar = aiAvatarInput.value || '🤖';
       saveSettingsToStorage();
       closeSettings();
+      // 刷新聊天界面以应用新头像
+      renderAllMessages();
     }
 
     function clearMemory() {
@@ -554,7 +512,6 @@
 
     async function smartCompressHistory() {
       if (getTotalTokens() <= 50000) return;
-
       const backgroundTask = async () => {
         try {
           const res = await fetch('/api/summarize', {
@@ -649,26 +606,19 @@
       }
     }
 
-    // ==================== 消息渲染（带头像） ====================
+    // ==================== 消息渲染（修复 + Emoji头像） ====================
     function createMessageRow(role, content) {
       const row = document.createElement('div');
       row.className = `message-row ${role}`;
+      // 为气泡样式添加辅助class
+      row.classList.add(role === 'user' ? 'row-user' : 'row-assistant');
 
+      // Emoji 头像
       const avatar = document.createElement('div');
-      avatar.className = `avatar ${role}-avatar`;
-      avatar.textContent = role === 'user' ? '你' : aiName.charAt(0);
-      // 根据设置选择头像风格
-      const type = role === 'user' ? settings.userAvatar : settings.aiAvatar;
-      if (type === 'emoji') {
-        avatar.textContent = role === 'user' ? '😊' : '🤖';
-        avatar.style.background = 'transparent';
-        avatar.style.color = '#333';
-        avatar.style.fontSize = '1.4rem';
-      } else {
-        avatar.style.background = role === 'user' ? '#34c759' : '#007aff';
-        avatar.textContent = role === 'user' ? '你' : (aiName || 'AI').charAt(0);
-      }
+      avatar.className = 'avatar';
+      avatar.textContent = role === 'user' ? (settings.userAvatar || '😊') : (settings.aiAvatar || '🤖');
 
+      // 消息气泡
       const bubble = document.createElement('div');
       bubble.className = 'msg';
       if (role === 'assistant') {
