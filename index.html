@@ -1,50 +1,84 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="zh">
 <head>
-    <title>次元雅舍</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robot" content="noindex,nofollow">
-    <link rel="stylesheet" type="text/css" href="index.css">
+  <meta charset="UTF-8">
+  <title>DeepSeek 连续聊天</title>
+  <style>
+    /* 样式和之前一样，保持不变 */
+    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 20px auto; padding: 0 15px; }
+    #chat-box { border: 1px solid #ddd; border-radius: 8px; height: 400px; overflow-y: auto; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+    .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; line-height: 1.5; }
+    .user { background: #e0f0ff; text-align: right; }
+    .assistant { background: #fff; border: 1px solid #eee; }
+    textarea { width: 100%; padding: 10px; resize: vertical; border-radius: 8px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; border: none; background: #111; color: white; border-radius: 8px; cursor: pointer; margin-top: 5px; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
 </head>
-
 <body>
-    <header>
-        <h1><a href="index.html" style="text-decoration: none;color: pink;">坚果 的博客</a></h1>
-    </header>
-     <nav>
-        <a style="border: 1px solid blue;padding: 10px;border-radius: 10px;color:pink;" href="index.html">首页</a>
-        <a style="border: 1px solid blue;padding: 10px;border-radius: 10px;color:pink;" href="zy.html">功能区</a>
-        <a style="border: 1px solid blue;padding: 10px;border-radius: 10px;color:pink;" href="yl.html">我与游戏</a>
-        <a style="border: 1px solid blue;padding: 10px;border-radius: 10px;color:pink;" href="6.html">杂谈</a>
-    </nav>
-    <main>
-        <a href=""> <img style="border-radius: 10px;max-width: 20%;height: auto;" src="favicon.png"></a>
-        <h1>你好啊！访客</h1>
-  <article><a href="QQ.html" style="text-decoration: none;color: white;" >
-            <h2 align="center">我们的讨论群<hr width="90%" align="center" color="white" size="4px">（About 蔚蓝档案）</h2>
-            <p style="color: #E5A7BC;">这是一个新的群<br>点此了解详情<br><sub>更新于2024.5.25</sub> </p></a>
-        </article>
-        <article>
-            <h2>曾经，这里经营着次元雅舍</h2>
-            <a href="gg.html" style="text-decoration: none;color: #E5A7BC;">现在，它已经停止运营<br>点此了解详情<br><sub>更新于2024.5.25</sub> </a>
-        </article>
-     
-    </main>
-    <hr width="60%" align="left" color="purple" color="purple" size="4px" />
-    <hr width="60%" align="center" color="pink" color="purple" size="4px" />
-    <hr width="60%" align="right" color="white" color="purple" size="4px" />
-    <h3 style="text-align: center;">我们的友链</h3><ul>
-        <li><del><a href="" style="color: grey;text-decoration: none;">站长的bilibili主页</a><br>可以看到有关次元雅舍的更新</li></del>
-    <li><a href="https://h5.qzone.qq.com/v2/wezone/jump?_wv=3&encrypt=1&schema=CgASeG1xcWFwaTovL3FjaXJjbGUvb3Blbm1haW5wYWdlP3Vpbj0xOTQ2ODkyOTg4Jnhzal9hdXRob3JfdWluPTE5NDY4OTI5ODgmeHNqX21haW5fZW50cmFuY2U9cXJjb2RlJnhzal9zdWJfZW50cmFuY2U9cHJvZmlsZRgA" style="color: pink;text-decoration: none;">站长的QQ小世界主页</a><br>穷，只能赛博cos的我</li>
-      </ul>
-    <hr width="60%" align="left" color="purple" color="purple" size="4px" />
-    <hr width="60%" align="center" color="pink" color="purple" size="4px" />
-    <hr width="60%" align="right" color="white" color="purple" size="4px" />
-    <footer>
-        E-mail:zggddgljw@outlook.com
-    </footer>
-</body>
+  <h2>🤖 DeepSeek（带记忆版）</h2>
+  <div id="chat-box"></div>
+  <textarea id="user-input" rows="3" placeholder="输入你的消息，Ctrl+Enter 发送"></textarea><br>
+  <button id="send-btn" onclick="sendMessage()">发送</button>
+  <button onclick="clearMemory()" style="background:#e53e3e; margin-left:10px;">清空记忆</button>
 
+  <script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // ★ 核心：前端维护一个对话历史数组
+    let conversationHistory = [];
+
+    userInput.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 'Enter') sendMessage();
+    });
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      // 1. 把用户新说的话加入历史
+      conversationHistory.push({ role: 'user', content: text });
+      addMessage('user', text);
+      userInput.value = '';
+      sendBtn.disabled = true;
+
+      try {
+        // 2. 把整个 conversationHistory 发给后端
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversationHistory })
+        });
+        const data = await res.json();
+
+        if (data.reply) {
+          // 3. 把 AI 的回复也加入历史
+          conversationHistory.push({ role: 'assistant', content: data.reply });
+          addMessage('assistant', data.reply);
+        } else {
+          addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
+        }
+      } catch (err) {
+        addMessage('assistant', '网络请求失败：' + err.message);
+      }
+      sendBtn.disabled = false;
+    }
+
+    function addMessage(role, content) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+      div.textContent = content;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function clearMemory() {
+      conversationHistory = [];
+      chatBox.innerHTML = '';
+      addMessage('assistant', '记忆已清空，开始新的对话吧。');
+    }
+  </script>
+</body>
 </html>
