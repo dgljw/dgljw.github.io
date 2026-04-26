@@ -3,219 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DeepSeek 聊天</title>
+  <title>DeepSeek 终极记忆版</title>
   <style>
     * { box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 16px;
-      background: #f5f5f7;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    h2 {
-      text-align: center;
-      margin: 0 0 12px 0;
-      font-weight: 600;
-      color: #1d1d1f;
-      font-size: 1.4rem;
-    }
-
-    #chat-box {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px 4px;
-      margin-bottom: 10px;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      scroll-behavior: smooth;
-    }
-
-    /* 消息基础样式 */
-    .msg {
-      max-width: 85%;
-      padding: 10px 14px;
-      border-radius: 18px;
-      line-height: 1.5;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-      animation: messageIn 0.3s ease-out;
-      font-size: 0.95rem;
-    }
-
-    .user {
-      align-self: flex-end;
-      background: #007aff;
-      color: white;
-      border-bottom-right-radius: 6px;
-    }
-
-    .assistant {
-      align-self: flex-start;
-      background: #fff;
-      border: 1px solid #e5e5ea;
-      border-bottom-left-radius: 6px;
-      color: #1d1d1f;
-    }
-
-    /* 消息进入动画 */
-    @keyframes messageIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* 输入区域 */
-    .input-area {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
-    }
-
-    textarea {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid #d1d1d6;
-      border-radius: 24px;
-      resize: none;
-      font-size: 0.95rem;
-      background: #fff;
-      outline: none;
-      transition: border-color 0.2s;
-      height: 44px;
-      max-height: 100px;
-      line-height: 1.4;
-    }
-
-    textarea:focus {
-      border-color: #007aff;
-    }
-
-    button {
-      padding: 10px 18px;
-      border: none;
-      background: #007aff;
-      color: white;
-      border-radius: 24px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      height: 44px;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-    }
-
-    button:active {
-      transform: scale(0.96);
-      opacity: 0.8;
-    }
-
-    button:disabled {
-      background: #a0c4ff;
-      cursor: not-allowed;
-    }
-
-    .btn-clear {
-      background: #ff3b30;
-      margin-left: 6px;
-    }
-
-    /* 发送按钮加载动画 */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 4px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* 底部安全区适配（iPhone） */
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
-      .input-area {
-        padding-bottom: env(safe-area-inset-bottom);
-      }
-    }
-
-    /* 小屏手机优化 */
-    @media (max-width: 400px) {
-      .msg { max-width: 90%; }
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 16px; background: #f5f5f7; height: 100vh; display: flex; flex-direction: column; }
+    h2 { text-align: center; margin: 0 0 8px 0; font-weight: 600; color: #1d1d1f; font-size: 1.4rem; }
+    .settings-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .settings-toggle { background: none; border: 1px solid #c7c7cc; border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; color: #3a3a3c; cursor: pointer; display: flex; align-items: center; gap: 4px; background: #fff; }
+    .settings-panel { display: none; background: #ffffff; border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+    .settings-panel.open { display: block; }
+    .settings-panel input { width: 100%; padding: 10px; border: 1px solid #d1d1d6; border-radius: 24px; font-size: 0.9rem; margin-bottom: 8px; }
+    .settings-panel .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+    .settings-panel button { padding: 8px 16px; border: none; border-radius: 20px; background: #007aff; color: white; font-size: 0.85rem; cursor: pointer; }
+    .settings-panel .btn-secondary { background: #e5e5ea; color: #1d1d1f; }
+    #chat-box { flex: 1; overflow-y: auto; padding: 10px 4px; margin-bottom: 10px; background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; animation: messageIn 0.3s ease-out; font-size: 0.95rem; }
+    .user { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 6px; }
+    .assistant { align-self: flex-start; background: #fff; border: 1px solid #e5e5ea; border-bottom-left-radius: 6px; color: #1d1d1f; }
+    @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .input-area { display: flex; gap: 8px; align-items: flex-end; }
+    textarea { flex: 1; padding: 12px; border: 1px solid #d1d1d6; border-radius: 24px; resize: none; font-size: 0.95rem; background: #fff; outline: none; transition: border-color 0.2s; height: 44px; max-height: 100px; line-height: 1.4; }
+    textarea:focus { border-color: #007aff; }
+    button { padding: 10px 18px; border: none; background: #007aff; color: white; border-radius: 24px; font-weight: 600; cursor: pointer; transition: all 0.2s; height: 44px; white-space: nowrap; }
+    button:active { transform: scale(0.96); opacity: 0.8; }
+    button:disabled { background: #a0c4ff; cursor: not-allowed; }
+    .btn-clear { background: #ff3b30; margin-left: 6px; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 4px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @supports (padding-bottom: env(safe-area-inset-bottom)) { .input-area { padding-bottom: env(safe-area-inset-bottom); } }
+    @media (max-width: 400px) { .msg { max-width: 90%; } }
   </style>
 </head>
 <body>
-  <h2>🤖 DeepSeek 聊天</h2>
+  <h2>🧠 终极记忆 DeepSeek</h2>
+  <div class="settings-bar">
+    <div class="settings-toggle" id="settingsToggle" onclick="toggleSettings()">
+      ⚙️ 人设 <span id="personaLabel"></span>
+    </div>
+    <button class="btn-clear" onclick="clearMemory()" style="margin-left:auto;">清空</button>
+  </div>
+  <div class="settings-panel" id="settingsPanel">
+    <input type="text" id="personaInput" placeholder="描述 AI 的性格，如：你是一个风趣的助手" />
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="clearPersona()">清除人设</button>
+      <button onclick="savePersona()">保存人设</button>
+    </div>
+  </div>
+
   <div id="chat-box"></div>
 
   <div class="input-area">
     <textarea id="user-input" rows="1" placeholder="输入消息..."></textarea>
     <button id="send-btn" onclick="sendMessage()">发送</button>
-    <button class="btn-clear" onclick="clearMemory()">清空</button>
   </div>
 
   <script>
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    const personaInput = document.getElementById('personaInput');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const personaLabel = document.getElementById('personaLabel');
 
-    const STORAGE_KEY = 'deepseek_chat_history_v2';
+    // ==================== 配置 ====================
+    const STORAGE_KEY = 'deepseek_chat_memory_v1';
+    const PERSONA_KEY = 'deepseek_persona';
+    const MAX_HISTORY_TOKENS = 6000; // 设置一个Token预算，超出则压缩
+    const TOKENS_TO_KEEP = 2000; // 压缩后，保留最近的约2000个Token的对话
 
-    // 自动调整输入框高度
+    // ==================== 全局状态 ====================
+    let systemPersona = loadPersona();
+    renderPersonaLabel();
+
+    // 新的对话结构，包含记忆体和摘要
+    let conversationData = loadConversationData();
+    let conversationHistory = conversationData.history;
+    let memoryItems = conversationData.memory_items || [];
+    let conversationSummary = conversationData.summary || '';
+
+    // 初始化渲染
+    renderAllMessages();
+
+    // ==================== UI 事件 ====================
     userInput.addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 100) + 'px';
     });
 
-    // 本地存储
-    function saveHistory() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory));
-      } catch (e) { console.error('保存失败', e); }
-    }
-
-    function loadHistory() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : [];
-      } catch (e) { return []; }
-    }
-
-    let conversationHistory = loadHistory();
-
-    // 渲染历史消息
-    if (conversationHistory.length > 0) {
-      conversationHistory.forEach(msg => addMessage(msg.role, msg.content, false));
-    }
-
-    function clearMemory() {
-      conversationHistory = [];
-      localStorage.removeItem(STORAGE_KEY);
-      chatBox.innerHTML = '';
-      addMessage('assistant', '记忆已清空，开始新的对话吧。');
-    }
-
-    // 快捷键发送
     userInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -223,23 +97,163 @@
       }
     });
 
+    function toggleSettings() { settingsPanel.classList.toggle('open'); }
+
+    function savePersona() {
+      const persona = personaInput.value.trim();
+      if (persona) {
+        systemPersona = persona;
+        localStorage.setItem(PERSONA_KEY, persona);
+        renderPersonaLabel();
+        personaInput.value = '';
+        settingsPanel.classList.remove('open');
+      }
+    }
+
+    function clearPersona() {
+      systemPersona = '';
+      localStorage.removeItem(PERSONA_KEY);
+      renderPersonaLabel();
+      personaInput.value = '';
+      settingsPanel.classList.remove('open');
+    }
+
+    function loadPersona() { return localStorage.getItem(PERSONA_KEY) || ''; }
+    function renderPersonaLabel() { personaLabel.textContent = systemPersona ? '已设定' : '未设定'; }
+
+    function clearMemory() {
+      conversationHistory = [];
+      memoryItems = [];
+      conversationSummary = '';
+      saveConversationData();
+      chatBox.innerHTML = '';
+      addMessage('assistant', '所有记忆已清空，包括长期记忆和摘要。', false);
+    }
+
+    // ==================== 数据持久化 ====================
+    function saveConversationData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          history: conversationHistory,
+          memory_items: memoryItems,
+          summary: conversationSummary
+        }));
+      } catch (e) { console.error('保存数据失败', e); }
+    }
+
+    function loadConversationData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : { history: [], memory_items: [], summary: '' };
+      } catch (e) { return { history: [], memory_items: [], summary: '' }; }
+    }
+
+    // ==================== 智能记忆压缩 ====================
+    // 简单的Token估算函数（基于字符，假设1 token ≈ 2 英文/标点，1 token ≈ 1.5 中文）
+    function estimateTokens(text) {
+      // 粗略估算：中文约1.5个字符 / token，英文标点约2个
+      const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+      const otherChars = text.length - chineseChars;
+      return Math.ceil(chineseChars / 1.5 + otherChars / 2);
+    }
+
+    function getTotalTokens(messages) {
+      let total = 0;
+      messages.forEach(msg => total += estimateTokens(msg.content));
+      return total;
+    }
+
+    async function smartCompressHistory() {
+      const totalTokens = getTotalTokens(conversationHistory);
+      if (totalTokens <= MAX_HISTORY_TOKENS) return;
+
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<span class="spinner"></span>压缩记忆';
+
+      try {
+        // 提取最近不超过2000 Token的对话
+        const recentHistory = [];
+        let recentTokens = 0;
+        for (let i = conversationHistory.length - 1; i >= 0; i--) {
+          const msgTokens = estimateTokens(conversationHistory[i].content);
+          if (recentTokens + msgTokens > TOKENS_TO_KEEP) break;
+          recentHistory.unshift(conversationHistory[i]);
+          recentTokens += msgTokens;
+        }
+
+        // 准备发送给总结API的历史（包含旧记忆体、摘要和所有历史对话）
+        const systemMessages = [];
+        if (memoryItems.length > 0) {
+          systemMessages.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
+        }
+        if (conversationSummary) {
+          systemMessages.push({ role: 'system', content: `[上轮摘要]\n${conversationSummary}` });
+        }
+
+        const allMessagesForSummary = [...systemMessages, ...conversationHistory];
+
+        const res = await fetch('/api/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: allMessagesForSummary,
+            existingMemory: memoryItems
+          })
+        });
+
+        if (!res.ok) throw new Error('总结失败');
+
+        const data = await res.json();
+        memoryItems = data.memory_items || [];
+        conversationSummary = data.summary || '';
+
+        // 用新记忆和摘要重构历史
+        const newHistory = [];
+        if (systemPersona) {
+          newHistory.push({ role: 'system', content: systemPersona });
+        }
+        if (memoryItems.length > 0) {
+          newHistory.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
+        }
+        if (conversationSummary) {
+          newHistory.push({ role: 'system', content: `[对话摘要]\n${conversationSummary}` });
+        }
+        newHistory.push(...recentHistory);
+
+        conversationHistory = newHistory;
+        saveConversationData();
+
+        // 刷新界面
+        chatBox.innerHTML = '';
+        renderAllMessages();
+        addMessage('assistant', '🧠 记忆已自动压缩并更新长期记忆点。', false);
+      } catch (err) {
+        console.error('压缩记忆失败', err);
+        addMessage('assistant', '⚠️ 记忆压缩失败，但对话仍可继续。');
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送';
+      }
+    }
+
+    // ==================== 聊天核心 ====================
     async function sendMessage() {
       const text = userInput.value.trim();
       if (!text) return;
 
-      // 用户消息
+      await smartCompressHistory();
+
+      // 添加用户消息
       conversationHistory.push({ role: 'user', content: text });
-      saveHistory();
+      saveConversationData();
       addMessage('user', text);
       userInput.value = '';
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
 
-      // 显示加载动画（替换按钮文字为旋转图标）
       const originalText = sendBtn.textContent;
       sendBtn.innerHTML = '<span class="spinner"></span>思考中';
 
-      // 创建临时加载消息
       const loadingDiv = document.createElement('div');
       loadingDiv.className = 'msg assistant';
       loadingDiv.textContent = '💭 正在思考...';
@@ -247,11 +261,24 @@
       chatBox.appendChild(loadingDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
 
+      // 构建API调用消息
+      const apiMessages = [];
+      // 1. 人设
+      if (systemPersona) {
+        apiMessages.push({ role: 'system', content: systemPersona });
+      }
+      // 2. 长期记忆点
+      if (memoryItems.length > 0) {
+        apiMessages.push({ role: 'system', content: `[还记得关于用户的关键信息]\n${memoryItems.join('\n')}` });
+      }
+      // 3. 对话上下文（历史中可能包含摘要和system消息，都带入）
+      conversationHistory.forEach(msg => apiMessages.push(msg));
+
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: conversationHistory })
+          body: JSON.stringify({ messages: apiMessages })
         });
 
         if (!res.ok) {
@@ -261,19 +288,17 @@
         }
 
         const data = await res.json();
-
-        // 移除加载消息
-        if (loadingDiv) loadingDiv.remove();
+        loadingDiv.remove();
 
         if (data.reply) {
           addMessage('assistant', data.reply);
           conversationHistory.push({ role: 'assistant', content: data.reply });
-          saveHistory();
+          saveConversationData();
         } else {
           addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
         }
       } catch (err) {
-        if (loadingDiv) loadingDiv.textContent = '网络请求失败：' + err.message;
+        loadingDiv.textContent = '网络请求失败：' + err.message;
       } finally {
         sendBtn.disabled = false;
         sendBtn.textContent = originalText;
@@ -284,9 +309,17 @@
       const div = document.createElement('div');
       div.className = `msg ${role}`;
       div.textContent = content;
-      if (!animate) div.style.animation = 'none'; // 历史消息不重复动画
+      if (!animate) div.style.animation = 'none';
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function renderAllMessages() {
+      conversationHistory.forEach(msg => {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          addMessage(msg.role, msg.content, false);
+        }
+      });
     }
   </script>
 </body>
