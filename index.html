@@ -4,50 +4,321 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DeepSeek 终极记忆版</title>
-  
+
+  <!-- Animate.css 动画库 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <!-- Markdown 渲染库 -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 16px; background: #f5f5f7; height: 100vh; display: flex; flex-direction: column; }
-    h2 { text-align: center; margin: 0 0 8px 0; font-weight: 600; color: #1d1d1f; font-size: 1.4rem; }
-    .settings-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-    .settings-toggle { background: none; border: 1px solid #c7c7cc; border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; color: #3a3a3c; cursor: pointer; display: flex; align-items: center; gap: 4px; background: #fff; }
-    .settings-panel { display: none; background: #ffffff; border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+    /* ========== 全局样式 ========== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 16px;
+      background: radial-gradient(circle at 20% 20%, #f9fafb, #f0f2f5);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0 0 8px 0;
+      font-weight: 600;
+      color: #1d1d1f;
+      font-size: 1.4rem;
+      letter-spacing: 1px;
+    }
+
+    /* 设置栏 */
+    .settings-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .settings-toggle {
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 30px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      color: #3a3a3c;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+
+    .settings-toggle:hover {
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+
+    .settings-toggle:active {
+      transform: scale(0.97);
+    }
+
+    .settings-panel {
+      display: none;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+      animation: fadeInDown 0.3s ease;
+    }
+
     .settings-panel.open { display: block; }
-    .settings-panel input { width: 100%; padding: 10px; border: 1px solid #d1d1d6; border-radius: 24px; font-size: 0.9rem; margin-bottom: 8px; }
+
+    .settings-panel input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 20px;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      background: rgba(0,0,0,0.02);
+      transition: all 0.3s ease;
+    }
+    .settings-panel input:focus {
+      outline: none;
+      border-color: #007aff;
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+    }
+
     .settings-panel .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
-    .settings-panel button { padding: 8px 16px; border: none; border-radius: 20px; background: #007aff; color: white; font-size: 0.85rem; cursor: pointer; }
-    .settings-panel .btn-secondary { background: #e5e5ea; color: #1d1d1f; }
-    #chat-box { flex: 1; overflow-y: auto; padding: 10px 4px; margin-bottom: 10px; background: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
-    .msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; animation: messageIn 0.3s ease-out; font-size: 0.95rem; }
-    .user { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 6px; }
-    .assistant { align-self: flex-start; background: #fff; border: 1px solid #e5e5ea; border-bottom-left-radius: 6px; color: #1d1d1f; }
+    .settings-panel button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 30px;
+      background: #007aff;
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .settings-panel button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    .settings-panel .btn-secondary {
+      background: rgba(0,0,0,0.05);
+      color: #1d1d1f;
+    }
+
+    /* 聊天区域 */
+    #chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 6px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+
+    /* 滚动条美化 */
+    #chat-box::-webkit-scrollbar { width: 4px; }
+    #chat-box::-webkit-scrollbar-track { background: transparent; }
+    #chat-box::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+
+    /* 消息气泡 */
+    .msg {
+      max-width: 85%;
+      padding: 12px 18px;
+      border-radius: 24px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+      transition: transform 0.2s ease;
+    }
+
+    .msg:hover {
+      transform: scale(1.01);
+    }
+
+    .user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #007aff, #0060df);
+      color: white;
+      border-bottom-right-radius: 8px;
+    }
+
+    .assistant {
+      align-self: flex-start;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-bottom-left-radius: 8px;
+      color: #1d1d1f;
+    }
 
     /* assistant 气泡内的 markdown 样式 */
+    .assistant h1, .assistant h2, .assistant h3 { margin: 6px 0; font-weight: 600; }
     .assistant p { margin: 0 0 6px 0; }
     .assistant p:last-child { margin-bottom: 0; }
     .assistant ul, .assistant ol { margin: 4px 0; padding-left: 18px; }
-    .assistant code { background: #f0f0f0; padding: 2px 5px; border-radius: 4px; font-size: 0.85em; }
-    .assistant pre { background: #f5f5f7; padding: 10px; border-radius: 8px; overflow-x: auto; }
+    .assistant li { margin-bottom: 2px; }
+    .assistant code {
+      background: rgba(0,0,0,0.04);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.88em;
+      font-family: 'SF Mono', monospace;
+    }
+    .assistant pre {
+      background: rgba(0,0,0,0.03);
+      padding: 12px;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
 
-    @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .input-area { display: flex; gap: 8px; align-items: flex-end; }
-    textarea { flex: 1; padding: 12px; border: 1px solid #d1d1d6; border-radius: 24px; resize: none; font-size: 0.95rem; background: #fff; outline: none; transition: border-color 0.2s; height: 44px; max-height: 100px; line-height: 1.4; }
-    textarea:focus { border-color: #007aff; }
-    button { padding: 10px 18px; border: none; background: #007aff; color: white; border-radius: 24px; font-weight: 600; cursor: pointer; transition: all 0.2s; height: 44px; white-space: nowrap; }
-    button:active { transform: scale(0.96); opacity: 0.8; }
-    button:disabled { background: #a0c4ff; cursor: not-allowed; }
-    .btn-clear { background: #ff3b30; margin-left: 6px; }
-    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 4px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @supports (padding-bottom: env(safe-area-inset-bottom)) { .input-area { padding-bottom: env(safe-area-inset-bottom); } }
-    @media (max-width: 400px) { .msg { max-width: 90%; } }
+    /* 输入区域 */
+    .input-area {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 14px 20px;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 30px;
+      resize: none;
+      font-size: 0.95rem;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px);
+      outline: none;
+      transition: all 0.3s ease;
+      height: 48px;
+      max-height: 110px;
+      line-height: 1.4;
+    }
+    textarea:focus {
+      border-color: #007aff;
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+    }
+
+    button {
+      padding: 14px 24px;
+      border: none;
+      background: linear-gradient(135deg, #007aff, #0060df);
+      color: white;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      height: 48px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0,122,255,0.4);
+    }
+    button:active {
+      transform: scale(0.96);
+      opacity: 0.9;
+    }
+    button:disabled {
+      background: linear-gradient(135deg, #a0c4ff, #8db8f0);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .btn-clear {
+      background: linear-gradient(135deg, #ff3b30, #e0352b);
+      margin-left: 8px;
+      box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+    }
+    .btn-clear:hover {
+      box-shadow: 0 8px 20px rgba(255,59,48,0.4);
+    }
+
+    /* 加载旋转器 */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 6px;
+    }
+
+    /* 动画定义 */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(0,122,255,0.1); }
+      50% { box-shadow: 0 0 12px rgba(0,122,255,0.2); }
+    }
+
+    /* 安全区适配 (iPhone) */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .input-area {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* 移动端优化 */
+    @media (max-width: 400px) {
+      .msg { max-width: 90%; }
+      button { padding: 12px 16px; font-size: 0.85rem; }
+    }
   </style>
 </head>
 <body>
   <h2>🧠 终极记忆 DeepSeek</h2>
+
+  <!-- 人设设置区 -->
   <div class="settings-bar">
     <div class="settings-toggle" id="settingsToggle" onclick="toggleSettings()">
       ⚙️ 人设 <span id="personaLabel"></span>
@@ -70,6 +341,7 @@
   </div>
 
   <script>
+    // ========== DOM 元素 ==========
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
@@ -77,12 +349,12 @@
     const settingsPanel = document.getElementById('settingsPanel');
     const personaLabel = document.getElementById('personaLabel');
 
-    // ==================== 配置 ====================
+    // ========== 配置 ==========
     const STORAGE_KEY = 'deepseek_chat_memory_v3';
     const PERSONA_KEY = 'deepseek_persona';
     const MAX_HISTORY_TOKENS = 50000;
 
-    // ==================== 全局状态 ====================
+    // ========== 全局状态 ==========
     let systemPersona = loadPersona();
     renderPersonaLabel();
 
@@ -90,13 +362,12 @@
     let conversationHistory = conversationData.history;
     let memoryItems = conversationData.memory_items || [];
 
-    // 初始化渲染
     renderAllMessages();
 
-    // ==================== UI 事件 ====================
+    // ========== UI 事件 ==========
     userInput.addEventListener('input', function() {
       this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+      this.style.height = Math.min(this.scrollHeight, 110) + 'px';
     });
 
     userInput.addEventListener('keydown', function(e) {
@@ -135,10 +406,10 @@
       memoryItems = [];
       saveConversationData();
       chatBox.innerHTML = '';
-      addMessage('assistant', '所有记忆已清空，包括长期记忆。', false);
+      addMessage('assistant', '所有记忆已清空，包括长期记忆。');
     }
 
-    // ==================== 数据持久化 ====================
+    // ========== 数据持久化 ==========
     function saveConversationData() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -155,7 +426,7 @@
       } catch (e) { return { history: [], memory_items: [] }; }
     }
 
-    // ==================== 智能记忆压缩 ====================
+    // ========== 智能记忆压缩 ==========
     function estimateTokens(text) {
       const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
       const otherChars = text.length - chineseChars;
@@ -227,7 +498,7 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // ==================== 聊天核心 ====================
+    // ========== 聊天核心 ==========
     async function sendMessage() {
       const text = userInput.value.trim();
       if (!text) return;
@@ -236,16 +507,16 @@
 
       conversationHistory.push({ role: 'user', content: text });
       saveConversationData();
-      addMessage('user', text);
+      addMessage('user', text, true);
       userInput.value = '';
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
 
-      const originalText = sendBtn.textContent;
+      const originalHTML = sendBtn.innerHTML;
       sendBtn.innerHTML = '<span class="spinner"></span>思考中';
 
       const loadingDiv = document.createElement('div');
-      loadingDiv.className = 'msg assistant';
+      loadingDiv.className = 'msg assistant animate__animated animate__pulse animate__infinite';
       loadingDiv.textContent = '💭 正在思考...';
       loadingDiv.style.opacity = '0.7';
       chatBox.appendChild(loadingDiv);
@@ -270,6 +541,7 @@
         if (!res.ok) {
           loadingDiv.textContent = `请求失败: HTTP ${res.status}`;
           loadingDiv.style.color = 'red';
+          loadingDiv.classList.remove('animate__animated', 'animate__pulse', 'animate__infinite');
           return;
         }
 
@@ -277,24 +549,33 @@
         loadingDiv.remove();
 
         if (data.reply) {
-          addMessage('assistant', data.reply);
+          addMessage('assistant', data.reply, true);
           conversationHistory.push({ role: 'assistant', content: data.reply });
           saveConversationData();
         } else {
-          addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
+          addMessage('assistant', '出错啦：' + (data.error || '未知错误'), true);
         }
       } catch (err) {
         loadingDiv.textContent = '网络请求失败：' + err.message;
+        loadingDiv.classList.remove('animate__animated', 'animate__pulse', 'animate__infinite');
       } finally {
         sendBtn.disabled = false;
-        sendBtn.textContent = originalText;
+        sendBtn.innerHTML = originalHTML;
       }
     }
 
-    // ==================== 消息渲染（Markdown 安全版） ====================
+    // ========== 消息渲染（Markdown 安全版 + 动画） ==========
     function addMessage(role, content, animate = true) {
       const div = document.createElement('div');
       div.className = `msg ${role}`;
+
+      if (animate) {
+        const animationClass = role === 'user'
+          ? 'animate__animated animate__fadeInRight'
+          : 'animate__animated animate__fadeInLeft';
+        div.classList.add(...animationClass.split(' '));
+        div.style.setProperty('--animate-duration', '0.4s');
+      }
       
       if (role === 'assistant') {
         try {
@@ -310,7 +591,6 @@
         div.textContent = content;
       }
       
-      if (!animate) div.style.animation = 'none';
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
