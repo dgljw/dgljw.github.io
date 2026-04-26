@@ -21,64 +21,94 @@
   <textarea id="user-input" rows="3" placeholder="输入你的消息，Ctrl+Enter 发送"></textarea><br>
   <button id="send-btn" onclick="sendMessage()">发送</button>
   <button onclick="clearMemory()" style="background:#e53e3e; margin-left:10px;">清空记忆</button>
+<script>
+  const chatBox = document.getElementById('chat-box');
+  const userInput = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  const STORAGE_KEY = 'deepseek_chat_history';
 
-  <script>
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+  let conversationHistory = loadHistory();
+  if (conversationHistory.length > 0) {
+    conversationHistory.forEach(msg => addMessage(msg.role, msg.content));
+  }
 
-    // ★ 核心：前端维护一个对话历史数组
-    let conversationHistory = [];
+  function saveHistory() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory));
+    } catch (e) { console.error('保存历史记录失败', e); }
+  }
 
-    userInput.addEventListener('keydown', function(e) {
-      if (e.ctrlKey && e.key === 'Enter') sendMessage();
-    });
+  function loadHistory() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('加载历史记录失败', e);
+      return [];
+    }
+  }
 
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
+  function clearMemory() {
+    conversationHistory = [];
+    localStorage.removeItem(STORAGE_KEY);
+    chatBox.innerHTML = '';
+    addMessage('assistant', '记忆已清空，开始新的对话吧。');
+  }
 
-      // 1. 把用户新说的话加入历史
-      conversationHistory.push({ role: 'user', content: text });
-      addMessage('user', text);
-      userInput.value = '';
-      sendBtn.disabled = true;
+  userInput.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') sendMessage();
+  });
 
-      try {
-        // 2. 把整个 conversationHistory 发给后端
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: conversationHistory })
-        });
-        const data = await res.json();
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
 
-        if (data.reply) {
-          // 3. 把 AI 的回复也加入历史
-          conversationHistory.push({ role: 'assistant', content: data.reply });
-          addMessage('assistant', data.reply);
-        } else {
-          addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
+    // 1. 用户消息入列、保存、显示
+    conversationHistory.push({ role: 'user', content: text });
+    saveHistory();
+    addMessage('user', text);
+    userInput.value = '';
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory })
+      });
+      const data = await res.json();
+
+      if (data.reply) {
+        // 2. ★ 助手回复与思考过程入列
+        const assistantMessage = {
+          role: 'assistant',
+          content: data.reply, // 最终回答
+          reasoning_content: data.reasoning_content // 保存思维链，但不影响下次请求
+        };
+        conversationHistory.push(assistantMessage);
+        saveHistory();
+
+        // 3. ★ 在界面上显示思考过程
+        if (data.reasoning_content) {
+          addMessage('assistant', '💭 思考中...\n' + data.reasoning_content);
         }
-      } catch (err) {
-        addMessage('assistant', '网络请求失败：' + err.message);
+        // 接着显示最终的回复
+        addMessage('assistant', data.reply);
+
+      } else {
+        addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
       }
-      sendBtn.disabled = false;
+    } catch (err) {
+      addMessage('assistant', '网络请求失败：' + err.message);
     }
+    sendBtn.disabled = false;
+  }
 
-    function addMessage(role, content) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + role;
-      div.textContent = content;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function clearMemory() {
-      conversationHistory = [];
-      chatBox.innerHTML = '';
-      addMessage('assistant', '记忆已清空，开始新的对话吧。');
-    }
-  </script>
-</body>
-</html>
+  function addMessage(role, content) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.textContent = content;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+</script>
