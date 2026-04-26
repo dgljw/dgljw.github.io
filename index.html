@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DeepSeek 终极记忆版</title>
+  
+  <!-- Markdown 渲染库 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 16px; background: #f5f5f7; height: 100vh; display: flex; flex-direction: column; }
@@ -20,6 +24,14 @@
     .msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; animation: messageIn 0.3s ease-out; font-size: 0.95rem; }
     .user { align-self: flex-end; background: #007aff; color: white; border-bottom-right-radius: 6px; }
     .assistant { align-self: flex-start; background: #fff; border: 1px solid #e5e5ea; border-bottom-left-radius: 6px; color: #1d1d1f; }
+
+    /* assistant 气泡内的 markdown 样式 */
+    .assistant p { margin: 0 0 6px 0; }
+    .assistant p:last-child { margin-bottom: 0; }
+    .assistant ul, .assistant ol { margin: 4px 0; padding-left: 18px; }
+    .assistant code { background: #f0f0f0; padding: 2px 5px; border-radius: 4px; font-size: 0.85em; }
+    .assistant pre { background: #f5f5f7; padding: 10px; border-radius: 8px; overflow-x: auto; }
+
     @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .input-area { display: flex; gap: 8px; align-items: flex-end; }
     textarea { flex: 1; padding: 12px; border: 1px solid #d1d1d6; border-radius: 24px; resize: none; font-size: 0.95rem; background: #fff; outline: none; transition: border-color 0.2s; height: 44px; max-height: 100px; line-height: 1.4; }
@@ -57,7 +69,7 @@
     <button id="send-btn" onclick="sendMessage()">发送</button>
   </div>
 
- <script>
+  <script>
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
@@ -279,16 +291,22 @@
       }
     }
 
-    // ★ 核心改动：助手消息用 innerHTML 渲染 Markdown
+    // ==================== 消息渲染（Markdown 安全版） ====================
     function addMessage(role, content, animate = true) {
       const div = document.createElement('div');
       div.className = `msg ${role}`;
       
       if (role === 'assistant') {
-        // 使用 marked 库将 Markdown 转为 HTML
-        div.innerHTML = marked.parse(content);
+        try {
+          if (typeof marked !== 'undefined') {
+            div.innerHTML = marked.parse(content);
+          } else {
+            div.textContent = content;
+          }
+        } catch (e) {
+          div.textContent = content;
+        }
       } else {
-        // 用户消息保持纯文本，防止 XSS
         div.textContent = content;
       }
       
@@ -298,6 +316,7 @@
     }
 
     function renderAllMessages() {
+      chatBox.innerHTML = '';
       conversationHistory.forEach(msg => {
         if (msg.role === 'user' || msg.role === 'assistant') {
           addMessage(msg.role, msg.content, false);
