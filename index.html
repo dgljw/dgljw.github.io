@@ -31,163 +31,147 @@
   <button class="btn-clear" onclick="clearMemory()">清空记忆</button>
 
  <script>
-    const chatBox = document.getElementById('chat-box');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+  const chatBox = document.getElementById('chat-box');
+  const userInput = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
 
-    const STORAGE_KEY = 'deepseek_chat_history';
+  const STORAGE_KEY = 'deepseek_chat_history';
 
-    // ========== 本地存储：记忆复活 ==========
-    function saveHistory() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory));
-      } catch (e) { console.error('保存历史记录失败', e); }
+  function saveHistory() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(conversationHistory));
+    } catch (e) { console.error('保存历史记录失败', e); }
+  }
+
+  function loadHistory() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('加载历史记录失败', e);
+      return [];
     }
+  }
 
-    function loadHistory() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        console.error('加载历史记录失败', e);
-        return [];
+  let conversationHistory = loadHistory();
+  if (conversationHistory.length > 0) {
+    conversationHistory.forEach(msg => {
+      if (msg.role === 'assistant' && msg.reasoning_content) {
+        addMessage('assistant', '💭 思考过程:\n' + msg.reasoning_content, true);
       }
-    }
-
-    // 初始化历史，并在页面上渲染
-    let conversationHistory = loadHistory();
-    if (conversationHistory.length > 0) {
-      conversationHistory.forEach(msg => {
-        if (msg.role === 'assistant' && msg.reasoning_content) {
-          // 如果存有思考过程，也渲染出来（用特殊样式）
-          addMessage('assistant', '💭 思考过程:\n' + msg.reasoning_content, true);
-        }
-        addMessage(msg.role, msg.content);
-      });
-    }
-
-    function clearMemory() {
-      conversationHistory = [];
-      localStorage.removeItem(STORAGE_KEY);
-      chatBox.innerHTML = '';
-      addMessage('assistant', '记忆已清空，开始新的对话吧。');
-    }
-
-    // 快捷键
-    userInput.addEventListener('keydown', function(e) {
-      if (e.ctrlKey && e.key === 'Enter') sendMessage();
+      addMessage(msg.role, msg.content);
     });
+  }
 
-    // ========== 发送消息（支持流式） ==========
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
+  function clearMemory() {
+    conversationHistory = [];
+    localStorage.removeItem(STORAGE_KEY);
+    chatBox.innerHTML = '';
+    addMessage('assistant', '记忆已清空，开始新的对话吧。');
+  }
 
-      // 1. 用户消息入列
-      conversationHistory.push({ role: 'user', content: text });
-      saveHistory();
-      addMessage('user', text);
-      userInput.value = '';
-      sendBtn.disabled = true;
+  userInput.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') sendMessage();
+  });
 
-      // 2. 创建两个临时容器：
-      //    thinkingDiv：专门显示思考过程（黄色框）
-      //    replyDiv：专门显示最终回答
-      let thinkingDiv = null;
-      const replyDiv = addMessage('assistant', '');
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
 
-      let finalContent = '';
-      let finalReasoning = '';
+    conversationHistory.push({ role: 'user', content: text });
+    saveHistory();
+    addMessage('user', text);
+    userInput.value = '';
+    sendBtn.disabled = true;
 
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: conversationHistory })
-        });
+    const replyDiv = addMessage('assistant', '');
+    let finalContent = '';
+    let finalReasoning = '';
 
-        if (!res.ok) {
-          replyDiv.textContent = '请求失败: HTTP ' + res.status;
-          sendBtn.disabled = false;
-          return;
-        }
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory })
+      });
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
+      if (!res.ok) {
+        replyDiv.textContent = '请求失败: HTTP ' + res.status;
+        sendBtn.disabled = false;
+        return;
+      }
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                
-                // ★ 处理思考内容：创建独立黄色框
-                if (parsed.reasoning_content) {
-                  finalReasoning += parsed.reasoning_content;
-                  if (!thinkingDiv) {
-                    // 第一次收到思考内容时，创建一个黄色框
-                    thinkingDiv = addMessage('assistant', '💭 思考过程:\n' + finalReasoning, true);
-                  } else {
-                    // 后续追加
-                    thinkingDiv.textContent = '💭 思考过程:\n' + finalReasoning;
-                  }
-                }
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
 
-                // ★ 处理回答内容
-                if (parsed.content) {
-                  finalContent += parsed.content;
-                  replyDiv.textContent = finalContent;
-                }
-
-              } catch (e) {
-                // 解析失败就当普通文本追加到回答框
-                replyDiv.textContent += data;
-                finalContent += data;
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              
+              if (parsed.reasoning_content) {
+                finalReasoning += parsed.reasoning_content;
               }
+              if (parsed.content) {
+                finalContent += parsed.content;
+              }
+
+              if (finalReasoning && finalContent) {
+                replyDiv.textContent = '💭 思考过程：\n' + finalReasoning + '\n\n' + finalContent;
+              } else if (finalReasoning) {
+                replyDiv.textContent = '💭 思考过程：\n' + finalReasoning;
+              } else if (finalContent) {
+                replyDiv.textContent = finalContent;
+              } else {
+                replyDiv.textContent = '...';
+              }
+
+            } catch (e) {
+              replyDiv.textContent += data;
+              finalContent += data;
             }
           }
-          // 自动滚动到底部
-          chatBox.scrollTop = chatBox.scrollHeight;
         }
-
-        // 流结束后保存
-        const assistantMsg = {
-          role: 'assistant',
-          content: finalContent || replyDiv.textContent,
-          reasoning_content: finalReasoning || undefined
-        };
-        conversationHistory.push(assistantMsg);
-        saveHistory();
-
-        if (!finalContent && !finalReasoning) {
-          replyDiv.textContent = '（助手没有返回内容）';
-        }
-
-      } catch (err) {
-        replyDiv.textContent = '网络请求失败：' + err.message;
-      } finally {
-        sendBtn.disabled = false;
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
-    }
 
-    // ========== 在聊天框添加一条消息 ==========
-    function addMessage(role, content, isThinking = false) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + role;
-      if (isThinking) div.classList.add('thinking'); // 思考过程用虚线框
-      div.textContent = content;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      return div;
+      const assistantMsg = {
+        role: 'assistant',
+        content: finalContent || replyDiv.textContent,
+        reasoning_content: finalReasoning || undefined
+      };
+      conversationHistory.push(assistantMsg);
+      saveHistory();
+
+      if (!finalContent && !finalReasoning) {
+        replyDiv.textContent = '（助手没有返回内容）';
+      }
+
+    } catch (err) {
+      replyDiv.textContent = '网络请求失败：' + err.message;
+    } finally {
+      sendBtn.disabled = false;
     }
-  </script>
+  }
+
+  function addMessage(role, content, isThinking = false) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    if (isThinking) div.classList.add('thinking');
+    div.textContent = content;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return div;
+  }
+</script>
 </body>
 </html>
