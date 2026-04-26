@@ -1,5 +1,5 @@
 // api/chat.js
-export const maxDuration = 60; // 免费版最大 60 秒，足够了
+export const maxDuration = 60;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '请提供 messages 数组' });
   }
 
-  // 清理历史消息中的 reasoning_content（防止 API 报错）
+  // 清除 reasoning_content 避免 API 报错
   const cleanedMessages = messages.map(msg => {
     const { reasoning_content, ...rest } = msg;
     return rest;
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'deepseek-v4-flash',
         messages: cleanedMessages,
-        thinking: { type: 'disabled' }, // 关闭思考，极速响应
+        thinking: { type: 'disabled' },
         stream: false
       })
     });
