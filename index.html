@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DeepSeek 聊天</title>
+  <title>DeepSeek 记忆管家</title>
 
   <!-- Animate.css 动画库 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -24,7 +24,6 @@
       flex-direction: column;
     }
 
-    /* 顶部标题栏 */
     .header {
       display: flex;
       align-items: center;
@@ -101,7 +100,7 @@
       border-radius: 10px;
     }
 
-    /* 消息行（包含头像） */
+    /* 消息行 */
     .message-row {
       display: flex;
       align-items: flex-end;
@@ -118,11 +117,23 @@
       align-self: flex-start;
     }
 
-    /* Emoji 头像 */
+    /* 头像容器 */
     .avatar {
-      font-size: 1.8rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
       flex-shrink: 0;
-      line-height: 1;
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     /* 消息气泡 */
@@ -137,9 +148,7 @@
       transition: transform 0.2s ease;
     }
 
-    .msg:hover {
-      transform: scale(1.01);
-    }
+    .msg:hover { transform: scale(1.01); }
 
     .row-user .msg {
       background: linear-gradient(135deg, #007aff, #0060df);
@@ -154,7 +163,7 @@
       color: #1d1d1f;
     }
 
-    /* Markdown 内容 */
+    /* Markdown 样式 */
     .assistant .msg h1, .assistant .msg h2, .assistant .msg h3 { margin: 6px 0; font-weight: 600; }
     .assistant .msg p { margin: 0 0 6px 0; }
     .assistant .msg p:last-child { margin-bottom: 0; }
@@ -173,12 +182,7 @@
     }
 
     /* 输入区域 */
-    .input-area {
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
-    }
-
+    .input-area { display: flex; gap: 10px; align-items: flex-end; }
     textarea {
       flex: 1;
       padding: 14px 20px;
@@ -213,10 +217,7 @@
       white-space: nowrap;
       box-shadow: 0 4px 12px rgba(0,122,255,0.3);
     }
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(0,122,255,0.4);
-    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,122,255,0.4); }
     button:active { transform: scale(0.96); }
     button:disabled {
       background: linear-gradient(135deg, #a0c4ff, #8db8f0);
@@ -224,27 +225,41 @@
       cursor: not-allowed;
     }
 
-    .spinner {
-      display: inline-block;
-      width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: white;
+    .btn-clear {
+      background: linear-gradient(135deg, #ff3b30, #e0352b);
+      margin-left: 8px;
+      box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+    }
+    .btn-clear:hover { box-shadow: 0 8px 20px rgba(255,59,48,0.4); }
+
+    /* 加载动画：打字指示器 */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 18px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 24px;
+      width: fit-content;
+      margin-left: 44px; /* 给头像留出空间 */
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: #888;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 6px;
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
-      .input-area { padding-bottom: env(safe-area-inset-bottom); }
-    }
-
-    @media (max-width: 400px) {
-      .message-row { max-width: 92%; }
-    }
-
-    /* ====== 设置侧边栏 ====== */
+    /* 设置弹窗 */
     .settings-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -254,7 +269,6 @@
       justify-content: center;
       align-items: center;
     }
-
     .settings-overlay.open { display: flex; }
 
     .settings-modal {
@@ -265,24 +279,16 @@
       max-width: 400px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.2);
       animation: fadeInUp 0.3s ease;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
     .settings-modal h3 { margin-bottom: 16px; font-weight: 600; }
 
-    .setting-item {
-      margin-bottom: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .setting-item label {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #555;
-    }
-
-    .setting-item input {
+    .setting-item { margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
+    .setting-item label { font-size: 0.85rem; font-weight: 500; color: #555; }
+    .setting-item input[type="text"],
+    .setting-item input[type="file"] {
       padding: 10px 14px;
       border: 1px solid #ddd;
       border-radius: 16px;
@@ -291,16 +297,28 @@
       outline: none;
     }
 
-    .avatar-preview {
+    .avatar-upload-row {
       display: flex;
-      gap: 20px;
       align-items: center;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-top: 4px;
     }
 
-    .avatar-preview .preview-emoji {
-      font-size: 2rem;
-      line-height: 1;
+    .avatar-preview {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      overflow: hidden;
+    }
+
+    .avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .modal-actions {
@@ -308,6 +326,7 @@
       gap: 10px;
       justify-content: flex-end;
       margin-top: 20px;
+      flex-wrap: wrap;
     }
 
     .modal-actions button {
@@ -316,55 +335,63 @@
       font-size: 0.9rem;
     }
 
-    .btn-danger {
-      background: #ff3b30 !important;
+    .btn-export {
+      background: #5856d6;
+      margin-right: auto;
     }
 
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .input-area { padding-bottom: env(safe-area-inset-bottom); }
+    }
+
+    @media (max-width: 400px) {
+      .message-row { max-width: 92%; }
+    }
   </style>
 </head>
 <body>
-  <!-- ===== 头部 ===== -->
+  <!-- 头部 -->
   <div class="header">
     <input type="text" class="editable-title" id="aiNameInput" value="DeepSeek" placeholder="AI名字" maxlength="15">
     <div class="settings-icon-btn" onclick="openSettings()">⚙️</div>
   </div>
 
-  <!-- ===== 聊天区域 ===== -->
+  <!-- 聊天区域 -->
   <div id="chat-box"></div>
 
-  <!-- ===== 输入区域 ===== -->
+  <!-- 输入区域 -->
   <div class="input-area">
     <textarea id="user-input" rows="1" placeholder="输入消息..."></textarea>
     <button id="send-btn" onclick="sendMessage()">发送</button>
   </div>
 
-  <!-- ===== 设置弹窗 ===== -->
+  <!-- 设置弹窗 -->
   <div class="settings-overlay" id="settingsOverlay">
     <div class="settings-modal">
       <h3>⚙️ 设置</h3>
 
       <div class="setting-item">
-        <label>你的头像 (Emoji)</label>
-        <input type="text" id="userAvatarInput" placeholder="😊" maxlength="4">
+        <label>你的头像 (Emoji 或 上传)</label>
+        <div class="avatar-upload-row">
+          <div class="avatar-preview" id="userPreviewAvatar">😊</div>
+          <input type="text" id="userAvatarInput" placeholder="😊" maxlength="4" style="flex:1;">
+          <input type="file" id="userAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarUpload('user', this)">
+          <button onclick="document.getElementById('userAvatarFile').click()" style="padding:8px 12px; font-size:0.8rem;">📁</button>
+        </div>
       </div>
 
       <div class="setting-item">
-        <label>AI 头像 (Emoji)</label>
-        <input type="text" id="aiAvatarInput" placeholder="🤖" maxlength="4">
-      </div>
-
-      <div class="avatar-preview">
-        <div>
-          <div style="font-size:0.8rem; margin-bottom:4px;">你</div>
-          <div class="preview-emoji" id="userPreviewAvatar">😊</div>
-        </div>
-        <div>
-          <div style="font-size:0.8rem; margin-bottom:4px;">AI</div>
-          <div class="preview-emoji" id="aiPreviewAvatar">🤖</div>
+        <label>AI 头像 (Emoji 或 上传)</label>
+        <div class="avatar-upload-row">
+          <div class="avatar-preview" id="aiPreviewAvatar">🤖</div>
+          <input type="text" id="aiAvatarInput" placeholder="🤖" maxlength="4" style="flex:1;">
+          <input type="file" id="aiAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarUpload('ai', this)">
+          <button onclick="document.getElementById('aiAvatarFile').click()" style="padding:8px 12px; font-size:0.8rem;">📁</button>
         </div>
       </div>
 
@@ -374,7 +401,8 @@
       </div>
 
       <div class="modal-actions">
-        <button class="btn-danger" onclick="clearMemory()">清空记忆</button>
+        <button class="btn-export" onclick="exportMemory()">📤 导出记忆</button>
+        <button class="btn-clear" onclick="clearMemory()">清空记忆</button>
         <button onclick="saveSettings()">保存设置</button>
       </div>
     </div>
@@ -395,7 +423,7 @@
 
     // ==================== 配置 ====================
     const STORAGE_KEY = 'deepseek_chat_memory_v5';
-    const SETTINGS_KEY = 'deepseek_settings_v2';
+    const SETTINGS_KEY = 'deepseek_settings_v3'; // 升级版本，支持图片头像
 
     // 默认设置
     let settings = loadSettings();
@@ -404,34 +432,90 @@
     function applySettingsToUI() {
       aiNameInput.value = settings.aiName || 'DeepSeek';
       personaInput.value = settings.persona || '';
-      userAvatarInput.value = settings.userAvatar || '😊';
-      aiAvatarInput.value = settings.aiAvatar || '🤖';
-      updateEmojiPreviews();
+
+      // 头像输入框显示 emoji 或提示
+      userAvatarInput.value = (settings.userAvatar && settings.userAvatar.emoji) ? settings.userAvatar.emoji : '';
+      aiAvatarInput.value = (settings.aiAvatar && settings.aiAvatar.emoji) ? settings.aiAvatar.emoji : '';
+      updateAvatarPreviews();
     }
 
     function loadSettings() {
       try {
         const saved = localStorage.getItem(SETTINGS_KEY);
-        return saved ? JSON.parse(saved) : {
-          aiName: 'DeepSeek',
-          persona: '',
-          userAvatar: '😊',
-          aiAvatar: '🤖'
-        };
-      } catch (e) { return { aiName: 'DeepSeek', persona: '', userAvatar: '😊', aiAvatar: '🤖' }; }
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+      return {
+        aiName: 'DeepSeek',
+        persona: '',
+        userAvatar: { emoji: '😊' },
+        aiAvatar: { emoji: '🤖' }
+      };
     }
 
     function saveSettingsToStorage() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     }
 
-    // Emoji 预览更新
-    function updateEmojiPreviews() {
-      userPreviewAvatar.textContent = userAvatarInput.value || '😊';
-      aiPreviewAvatar.textContent = aiAvatarInput.value || '🤖';
+    // 更新设置面板中的头像预览
+    function updateAvatarPreviews() {
+      renderAvatarPreview('user');
+      renderAvatarPreview('ai');
     }
-    userAvatarInput.addEventListener('input', updateEmojiPreviews);
-    aiAvatarInput.addEventListener('input', updateEmojiPreviews);
+
+    function renderAvatarPreview(who) {
+      const avatarData = who === 'user' ? settings.userAvatar : settings.aiAvatar;
+      const previewEl = who === 'user' ? userPreviewAvatar : aiPreviewAvatar;
+      if (!avatarData) return;
+      if (avatarData.base64) {
+        previewEl.innerHTML = `<img src="${avatarData.base64}" alt="avatar">`;
+      } else if (avatarData.emoji) {
+        previewEl.innerHTML = '';
+        previewEl.textContent = avatarData.emoji;
+      } else {
+        previewEl.textContent = '?';
+      }
+    }
+
+    // 处理头像上传
+    function handleAvatarUpload(who, fileInput) {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      // 文件大小限制500KB
+      if (file.size > 500 * 1024) {
+        alert('图片大小不能超过500KB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function() {
+          // 缩放到128x128
+          const canvas = document.createElement('canvas');
+          canvas.width = 128;
+          canvas.height = 128;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 128, 128);
+          const scaledBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+          // 更新 settings
+          if (who === 'user') {
+            settings.userAvatar = { base64: scaledBase64 };
+            userAvatarInput.value = ''; // 清空 emoji 输入
+          } else {
+            settings.aiAvatar = { base64: scaledBase64 };
+            aiAvatarInput.value = '';
+          }
+          saveSettingsToStorage();
+          updateAvatarPreviews();
+          // 头像更新后立即刷新消息列表，让更改可见
+          renderAllMessages();
+        };
+      };
+      reader.readAsDataURL(file);
+    }
 
     // 全局状态
     let systemPersona = settings.persona;
@@ -469,10 +553,20 @@
     });
 
     function saveSettings() {
-      settings.persona = personaInput.value.trim();
-      systemPersona = settings.persona;
-      settings.userAvatar = userAvatarInput.value || '😊';
-      settings.aiAvatar = aiAvatarInput.value || '🤖';
+      const newPersona = personaInput.value.trim();
+      settings.persona = newPersona;
+      systemPersona = newPersona;
+
+      // 处理头像：如果用户输入了 emoji，则覆盖 base64
+      const userEmoji = userAvatarInput.value.trim();
+      if (userEmoji) {
+        settings.userAvatar = { emoji: userEmoji };
+      }
+      const aiEmoji = aiAvatarInput.value.trim();
+      if (aiEmoji) {
+        settings.aiAvatar = { emoji: aiEmoji };
+      }
+
       saveSettingsToStorage();
       closeSettings();
       // 刷新聊天界面以应用新头像
@@ -485,6 +579,37 @@
       saveConversationData();
       chatBox.innerHTML = '';
       addMessage('assistant', '所有记忆已清空。');
+      closeSettings();
+    }
+
+    // ==================== 导出记忆 ====================
+    function exportMemory() {
+      const data = {
+        settings: settings,
+        memory: {
+          history: conversationHistory,
+          memory_items: memoryItems
+        }
+      };
+
+      let text = '';
+      text += `=== AI 名字 ===\n${settings.aiName}\n\n`;
+      text += `=== 人设 ===\n${settings.persona || '(无)'}\n\n`;
+      text += `=== 长期记忆 ===\n${memoryItems.length > 0 ? memoryItems.join('\n- ') : '(无)'}\n\n`;
+      text += `=== 对话历史 ===\n`;
+      conversationHistory.forEach((msg, i) => {
+        text += `[${msg.role}] ${msg.content}\n`;
+      });
+
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `记忆备份_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     // ==================== 持久化 ====================
@@ -562,11 +687,8 @@
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
 
-      const originalHTML = sendBtn.innerHTML;
-      sendBtn.innerHTML = '<span class="spinner"></span>思考中';
-
-      const loadingRow = createMessageRow('assistant', '💭 正在思考...');
-      loadingRow.querySelector('.msg').style.opacity = '0.7';
+      // 使用打字指示器替代原来的静态文字
+      const loadingRow = createTypingIndicator();
       chatBox.appendChild(loadingRow);
       chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -582,15 +704,15 @@
           body: JSON.stringify({ messages: apiMessages })
         });
 
+        loadingRow.remove();
+
         if (!res.ok) {
-          loadingRow.querySelector('.msg').textContent = `请求失败: HTTP ${res.status}`;
-          loadingRow.querySelector('.msg').style.color = 'red';
+          const errMsg = `请求失败: HTTP ${res.status}`;
+          addMessage('assistant', errMsg);
           return;
         }
 
         const data = await res.json();
-        loadingRow.remove();
-
         if (data.reply) {
           addMessage('assistant', data.reply);
           conversationHistory.push({ role: 'assistant', content: data.reply });
@@ -599,26 +721,38 @@
           addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
         }
       } catch (err) {
-        loadingRow.querySelector('.msg').textContent = '网络请求失败：' + err.message;
+        loadingRow.remove();
+        addMessage('assistant', '网络请求失败：' + err.message);
       } finally {
         sendBtn.disabled = false;
-        sendBtn.innerHTML = originalHTML;
       }
     }
 
-    // ==================== 消息渲染（修复 + Emoji头像） ====================
+    // ==================== 打字指示器 ====================
+    function createTypingIndicator() {
+      const indicator = document.createElement('div');
+      indicator.className = 'typing-indicator';
+      indicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      return indicator;
+    }
+
+    // ==================== 消息渲染（支持图片/Emoji头像） ====================
     function createMessageRow(role, content) {
       const row = document.createElement('div');
       row.className = `message-row ${role}`;
-      // 为气泡样式添加辅助class
       row.classList.add(role === 'user' ? 'row-user' : 'row-assistant');
 
-      // Emoji 头像
+      // 头像
       const avatar = document.createElement('div');
       avatar.className = 'avatar';
-      avatar.textContent = role === 'user' ? (settings.userAvatar || '😊') : (settings.aiAvatar || '🤖');
+      const avatarData = role === 'user' ? settings.userAvatar : settings.aiAvatar;
+      if (avatarData && avatarData.base64) {
+        avatar.innerHTML = `<img src="${avatarData.base64}" alt="avatar">`;
+      } else {
+        avatar.textContent = avatarData?.emoji || (role === 'user' ? '😊' : '🤖');
+      }
 
-      // 消息气泡
+      // 气泡
       const bubble = document.createElement('div');
       bubble.className = 'msg';
       if (role === 'assistant') {
