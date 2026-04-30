@@ -22,6 +22,8 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+      /* ★ 防止任何横向溢出 */
+      overflow-x: hidden;
     }
 
     /* 顶部标题栏 */
@@ -107,7 +109,7 @@
       display: flex;
       align-items: flex-end;
       gap: 10px;
-      max-width: 90%;
+      max-width: 92%;
     }
 
     .message-row.user {
@@ -149,8 +151,8 @@
       white-space: pre-wrap;
       font-size: 0.95rem;
       transition: transform 0.2s ease;
-      /* 防止子元素溢出 */
-      overflow: hidden;
+      overflow: hidden;           /* 防止子元素溢出 */
+      word-break: break-word;     /* ★ 强制长单词/链接换行 */
     }
 
     .msg:hover {
@@ -196,11 +198,10 @@
       border-radius: 10px;
       overflow-x: auto;            /* 长代码可横向滚动 */
       margin: 6px 0;
-      white-space: pre-wrap;       /* 允许自动换行，防止撑破气泡 */
+      white-space: pre-wrap;       /* 允许自动换行 */
       word-break: break-word;
     }
 
-    /* 代码块内部的 code 标签 */
     .assistant .msg pre code {
       background: transparent;
       padding: 0;
@@ -270,8 +271,16 @@
       box-shadow: 0 8px 20px rgba(255,59,48,0.4);
     }
 
-    /* 加载动画：打字指示器 */
-    .typing-indicator {
+    /* 加载动画：打字指示器 —— 现在作为标准消息行展现 */
+    .typing-indicator-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 92%;
+      align-self: flex-start;
+    }
+
+    .typing-bubble {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -279,9 +288,9 @@
       background: rgba(255,255,255,0.9);
       border: 1px solid rgba(0,0,0,0.06);
       border-radius: 24px;
-      width: fit-content;
-      margin-left: 50px;
+      border-bottom-left-radius: 8px;
     }
+
     .dot {
       width: 8px;
       height: 8px;
@@ -402,7 +411,8 @@
     }
 
     @media (max-width: 400px) {
-      .message-row { max-width: 92%; }
+      .message-row { max-width: 95%; }
+      .typing-indicator-row { max-width: 95%; }
     }
   </style>
 </head>
@@ -748,7 +758,7 @@
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
 
-      // 显示打字动画
+      // 显示打字动画（现在是标准消息行）
       const loadingRow = createTypingIndicator();
       chatBox.appendChild(loadingRow);
       chatBox.scrollTop = chatBox.scrollHeight;
@@ -789,12 +799,29 @@
       }
     }
 
-    // ==================== 打字指示器 ====================
+    // ==================== 打字指示器（改版：标准消息行） ====================
     function createTypingIndicator() {
-      const indicator = document.createElement('div');
-      indicator.className = 'typing-indicator';
-      indicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-      return indicator;
+      const row = document.createElement('div');
+      row.className = 'typing-indicator-row';
+
+      // 占位头像（保持与AI头像一致）
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      const avatarData = settings.aiAvatar;
+      if (avatarData && avatarData.base64) {
+        avatar.innerHTML = `<img src="${avatarData.base64}" alt="avatar">`;
+      } else {
+        avatar.textContent = avatarData?.emoji || '🤖';
+      }
+
+      // 打字气泡
+      const bubble = document.createElement('div');
+      bubble.className = 'typing-bubble';
+      bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      return row;
     }
 
     // ==================== 消息渲染（支持图片 / Emoji 头像） ====================
