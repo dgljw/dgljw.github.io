@@ -102,10 +102,10 @@
       border-radius: 10px;
     }
 
-    /* 消息行（包含头像）—— 改回底部对齐 */
+    /* 消息行（包含头像）—— 底部对齐 */
     .message-row {
       display: flex;
-      align-items: flex-end;  /* ★ 头像和气泡底部对齐 */
+      align-items: flex-end;
       gap: 10px;
       max-width: 90%;
     }
@@ -149,6 +149,8 @@
       white-space: pre-wrap;
       font-size: 0.95rem;
       transition: transform 0.2s ease;
+      /* 防止子元素溢出 */
+      overflow: hidden;
     }
 
     .msg:hover {
@@ -168,22 +170,43 @@
       color: #1d1d1f;
     }
 
-    /* assistant 气泡内的 Markdown 样式 */
-    .assistant .msg h1, .assistant .msg h2, .assistant .msg h3 { margin: 6px 0; font-weight: 600; }
+    /* ---- assistant 气泡内的 Markdown 样式 ---- */
+    .assistant .msg h1,
+    .assistant .msg h2,
+    .assistant .msg h3 { margin: 6px 0; font-weight: 600; }
     .assistant .msg p { margin: 0 0 6px 0; }
     .assistant .msg p:last-child { margin-bottom: 0; }
-    .assistant .msg ul, .assistant .msg ol { margin: 4px 0; padding-left: 18px; }
+    .assistant .msg ul,
+    .assistant .msg ol { margin: 4px 0; padding-left: 18px; }
+
+    /* 行内代码 */
     .assistant .msg code {
-      background: rgba(0,0,0,0.04);
-      padding: 2px 8px;
-      border-radius: 6px;
+      background: rgba(0,0,0,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
       font-size: 0.88em;
+      font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+      word-break: break-word;
     }
+
+    /* 代码块（多行） */
     .assistant .msg pre {
-      background: rgba(0,0,0,0.03);
-      padding: 12px;
-      border-radius: 12px;
-      overflow-x: auto;
+      background: rgba(0,0,0,0.04);
+      padding: 10px 12px;
+      border-radius: 10px;
+      overflow-x: auto;            /* 长代码可横向滚动 */
+      margin: 6px 0;
+      white-space: pre-wrap;       /* 允许自动换行，防止撑破气泡 */
+      word-break: break-word;
+    }
+
+    /* 代码块内部的 code 标签 */
+    .assistant .msg pre code {
+      background: transparent;
+      padding: 0;
+      font-size: 0.85em;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     /* 输入区域 */
