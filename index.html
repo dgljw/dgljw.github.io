@@ -22,7 +22,6 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
-      /* ★ 防止任何横向溢出 */
       overflow-x: hidden;
     }
 
@@ -96,7 +95,6 @@
       scroll-behavior: smooth;
     }
 
-    /* 滚动条美化 */
     #chat-box::-webkit-scrollbar { width: 4px; }
     #chat-box::-webkit-scrollbar-track { background: transparent; }
     #chat-box::-webkit-scrollbar-thumb {
@@ -104,7 +102,7 @@
       border-radius: 10px;
     }
 
-    /* 消息行（包含头像）—— 底部对齐 */
+    /* 消息行 */
     .message-row {
       display: flex;
       align-items: flex-end;
@@ -121,7 +119,6 @@
       align-self: flex-start;
     }
 
-    /* 头像 */
     .avatar {
       width: 40px;
       height: 40px;
@@ -151,13 +148,11 @@
       white-space: pre-wrap;
       font-size: 0.95rem;
       transition: transform 0.2s ease;
-      overflow: hidden;           /* 防止子元素溢出 */
-      word-break: break-word;     /* ★ 强制长单词/链接换行 */
+      overflow: hidden;
+      word-break: break-word;
     }
 
-    .msg:hover {
-      transform: scale(1.01);
-    }
+    .msg:hover { transform: scale(1.01); }
 
     .row-user .msg {
       background: linear-gradient(135deg, #007aff, #0060df);
@@ -172,7 +167,7 @@
       color: #1d1d1f;
     }
 
-    /* ---- assistant 气泡内的 Markdown 样式 ---- */
+    /* Markdown 基础样式 */
     .assistant .msg h1,
     .assistant .msg h2,
     .assistant .msg h3 { margin: 6px 0; font-weight: 600; }
@@ -181,7 +176,6 @@
     .assistant .msg ul,
     .assistant .msg ol { margin: 4px 0; padding-left: 18px; }
 
-    /* 行内代码 */
     .assistant .msg code {
       background: rgba(0,0,0,0.06);
       padding: 2px 6px;
@@ -191,14 +185,13 @@
       word-break: break-word;
     }
 
-    /* 代码块（多行） */
     .assistant .msg pre {
       background: rgba(0,0,0,0.04);
       padding: 10px 12px;
       border-radius: 10px;
-      overflow-x: auto;            /* 长代码可横向滚动 */
+      overflow-x: auto;
       margin: 6px 0;
-      white-space: pre-wrap;       /* 允许自动换行 */
+      white-space: pre-wrap;
       word-break: break-word;
     }
 
@@ -210,12 +203,37 @@
       word-break: break-word;
     }
 
-    /* 输入区域 */
-    .input-area {
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
+    /* 表格样式 */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 8px 0;
+      max-width: 100%;
+      border-radius: 8px;
     }
+
+    .assistant .msg table {
+      border-collapse: collapse;
+      width: max-content;
+      min-width: 100%;
+      font-size: 0.88em;
+    }
+
+    .assistant .msg th,
+    .assistant .msg td {
+      border: 1px solid #d1d5db;
+      padding: 6px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .assistant .msg th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+
+    /* 输入区域 */
+    .input-area { display: flex; gap: 10px; align-items: flex-end; }
 
     textarea {
       flex: 1;
@@ -251,27 +269,18 @@
       white-space: nowrap;
       box-shadow: 0 4px 12px rgba(0,122,255,0.3);
     }
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(0,122,255,0.4);
-    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,122,255,0.4); }
     button:active { transform: scale(0.96); }
-    button:disabled {
-      background: linear-gradient(135deg, #a0c4ff, #8db8f0);
-      box-shadow: none;
-      cursor: not-allowed;
-    }
+    button:disabled { background: linear-gradient(135deg, #a0c4ff, #8db8f0); box-shadow: none; cursor: not-allowed; }
 
     .btn-clear {
       background: linear-gradient(135deg, #ff3b30, #e0352b);
       margin-left: 8px;
       box-shadow: 0 4px 12px rgba(255,59,48,0.3);
     }
-    .btn-clear:hover {
-      box-shadow: 0 8px 20px rgba(255,59,48,0.4);
-    }
+    .btn-clear:hover { box-shadow: 0 8px 20px rgba(255,59,48,0.4); }
 
-    /* 加载动画：打字指示器 —— 现在作为标准消息行展现 */
+    /* 打字指示器 */
     .typing-indicator-row {
       display: flex;
       align-items: flex-end;
@@ -292,8 +301,7 @@
     }
 
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 8px; height: 8px;
       background: #888;
       border-radius: 50%;
       animation: bounce 1.4s ease-in-out infinite;
@@ -316,7 +324,6 @@
       justify-content: center;
       align-items: center;
     }
-
     .settings-overlay.open { display: flex; }
 
     .settings-modal {
@@ -333,19 +340,8 @@
 
     .settings-modal h3 { margin-bottom: 16px; font-weight: 600; }
 
-    .setting-item {
-      margin-bottom: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .setting-item label {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #555;
-    }
-
+    .setting-item { margin-bottom: 16px; display: flex; flex-direction: column; gap: 4px; }
+    .setting-item label { font-size: 0.85rem; font-weight: 500; color: #555; }
     .setting-item input[type="text"],
     .setting-item input[type="file"] {
       padding: 10px 14px;
@@ -356,50 +352,21 @@
       outline: none;
     }
 
-    .avatar-upload-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 4px;
-    }
+    .avatar-upload-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 
     .avatar-preview {
-      width: 56px;
-      height: 56px;
+      width: 56px; height: 56px;
       border-radius: 50%;
       background: #eee;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      overflow: hidden;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; overflow: hidden; flex-shrink: 0;
     }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-    .avatar-preview img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+    .modal-actions button { padding: 10px 20px; border-radius: 24px; font-size: 0.9rem; }
 
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-
-    .modal-actions button {
-      padding: 10px 20px;
-      border-radius: 24px;
-      font-size: 0.9rem;
-    }
-
-    .btn-export {
-      background: #5856d6;
-      margin-right: auto;
-    }
+    .btn-export { background: #5856d6; margin-right: auto; }
 
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(30px); }
@@ -437,7 +404,6 @@
     <div class="settings-modal">
       <h3>⚙️ 设置</h3>
 
-      <!-- 用户头像设置：Emoji 或 上传 -->
       <div class="setting-item">
         <label>你的头像 (Emoji 或 上传)</label>
         <div class="avatar-upload-row">
@@ -448,7 +414,6 @@
         </div>
       </div>
 
-      <!-- AI 头像设置：Emoji 或 上传 -->
       <div class="setting-item">
         <label>AI 头像 (Emoji 或 上传)</label>
         <div class="avatar-upload-row">
@@ -459,7 +424,6 @@
         </div>
       </div>
 
-      <!-- AI 人设 -->
       <div class="setting-item">
         <label>AI 人设 (可选)</label>
         <input type="text" id="personaInput" placeholder="例如：你是一个风趣的助手">
@@ -486,15 +450,12 @@
     const userPreviewAvatar = document.getElementById('userPreviewAvatar');
     const aiPreviewAvatar = document.getElementById('aiPreviewAvatar');
 
-    // ==================== 配置 ====================
-    const STORAGE_KEY = 'deepseek_chat_memory_v5';  // 对话记忆存储键
-    const SETTINGS_KEY = 'deepseek_settings_v3';    // 设置存储键
+    const STORAGE_KEY = 'deepseek_chat_memory_v5';
+    const SETTINGS_KEY = 'deepseek_settings_v3';
 
-    // 加载设置
     let settings = loadSettings();
     applySettingsToUI();
 
-    // 将设置应用到界面
     function applySettingsToUI() {
       aiNameInput.value = settings.aiName || 'DeepSeek';
       personaInput.value = settings.persona || '';
@@ -503,32 +464,18 @@
       updateAvatarPreviews();
     }
 
-    // 从本地读取设置
     function loadSettings() {
       try {
         const saved = localStorage.getItem(SETTINGS_KEY);
         if (saved) return JSON.parse(saved);
       } catch (e) {}
-      return {
-        aiName: 'DeepSeek',
-        persona: '',
-        userAvatar: { emoji: '😊' },
-        aiAvatar: { emoji: '🤖' }
-      };
+      return { aiName: 'DeepSeek', persona: '', userAvatar: { emoji: '😊' }, aiAvatar: { emoji: '🤖' } };
     }
 
-    // 保存设置到本地
-    function saveSettingsToStorage() {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    }
+    function saveSettingsToStorage() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
 
-    // 刷新头像预览
-    function updateAvatarPreviews() {
-      renderAvatarPreview('user');
-      renderAvatarPreview('ai');
-    }
+    function updateAvatarPreviews() { renderAvatarPreview('user'); renderAvatarPreview('ai'); }
 
-    // 渲染头像预览
     function renderAvatarPreview(who) {
       const avatarData = who === 'user' ? settings.userAvatar : settings.aiAvatar;
       const previewEl = who === 'user' ? userPreviewAvatar : aiPreviewAvatar;
@@ -538,22 +485,13 @@
       } else if (avatarData.emoji) {
         previewEl.innerHTML = '';
         previewEl.textContent = avatarData.emoji;
-      } else {
-        previewEl.textContent = '?';
-      }
+      } else { previewEl.textContent = '?'; }
     }
 
-    // 处理头像上传：中心裁剪为正方形，缩放至128x128，压缩质量0.7
     function handleAvatarUpload(who, fileInput) {
       const file = fileInput.files[0];
       if (!file) return;
-
-      // 限制文件大小 500KB
-      if (file.size > 500 * 1024) {
-        alert('图片大小不能超过500KB');
-        return;
-      }
-
+      if (file.size > 500 * 1024) { alert('图片大小不能超过500KB'); return; }
       const reader = new FileReader();
       reader.onload = function(e) {
         const img = new Image();
@@ -561,18 +499,13 @@
         img.onload = function() {
           const canvas = document.createElement('canvas');
           const size = 128;
-          canvas.width = size;
-          canvas.height = size;
+          canvas.width = size; canvas.height = size;
           const ctx = canvas.getContext('2d');
-
-          // 取图片中心正方形区域
           const minDim = Math.min(img.width, img.height);
           const sx = (img.width - minDim) / 2;
           const sy = (img.height - minDim) / 2;
           ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-
           const scaledBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
           if (who === 'user') {
             settings.userAvatar = { base64: scaledBase64 };
             userAvatarInput.value = '';
@@ -582,111 +515,73 @@
           }
           saveSettingsToStorage();
           updateAvatarPreviews();
-          renderAllMessages(); // 头像更新后立即刷新整个消息列表
+          renderAllMessages();
         };
       };
       reader.readAsDataURL(file);
     }
 
-    // 全局状态
     let systemPersona = settings.persona;
     let aiName = settings.aiName;
-
-    // 加载对话数据
     let conversationData = loadConversationData();
     let conversationHistory = conversationData.history;
     let memoryItems = conversationData.memory_items || [];
-
-    // 初始化渲染历史消息
     renderAllMessages();
 
-    // ==================== 事件监听 ====================
-    // AI 名字实时保存
     aiNameInput.addEventListener('input', function() {
       settings.aiName = this.value;
       aiName = this.value;
       saveSettingsToStorage();
     });
 
-    // 输入框自动伸缩
     userInput.addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 110) + 'px';
     });
-
-    // Enter 发送消息
     userInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
-    // 设置弹窗开关
     function openSettings() { settingsOverlay.classList.add('open'); }
     function closeSettings() { settingsOverlay.classList.remove('open'); }
-    settingsOverlay.addEventListener('click', function(e) {
-      if (e.target === settingsOverlay) closeSettings();
-    });
+    settingsOverlay.addEventListener('click', function(e) { if (e.target === settingsOverlay) closeSettings(); });
 
-    // 保存设置
     function saveSettings() {
       settings.persona = personaInput.value.trim();
       systemPersona = settings.persona;
-
       const userEmoji = userAvatarInput.value.trim();
       if (userEmoji) settings.userAvatar = { emoji: userEmoji };
-
       const aiEmoji = aiAvatarInput.value.trim();
       if (aiEmoji) settings.aiAvatar = { emoji: aiEmoji };
-
       saveSettingsToStorage();
       closeSettings();
-      renderAllMessages(); // 立即应用新头像
+      renderAllMessages();
     }
 
-    // 清空记忆
     function clearMemory() {
-      conversationHistory = [];
-      memoryItems = [];
-      saveConversationData();
-      chatBox.innerHTML = '';
+      conversationHistory = []; memoryItems = [];
+      saveConversationData(); chatBox.innerHTML = '';
       addMessage('assistant', '所有记忆已清空。');
       closeSettings();
     }
 
-    // ==================== 导出记忆为 TXT 文件 ====================
     function exportMemory() {
       let text = '';
       text += `=== AI 名字 ===\n${settings.aiName}\n\n`;
       text += `=== 人设 ===\n${settings.persona || '(无)'}\n\n`;
       text += `=== 长期记忆 ===\n${memoryItems.length > 0 ? memoryItems.join('\n- ') : '(无)'}\n\n`;
       text += `=== 对话历史 ===\n`;
-      conversationHistory.forEach(msg => {
-        text += `[${msg.role}] ${msg.content}\n`;
-      });
-
+      conversationHistory.forEach(msg => { text += `[${msg.role}] ${msg.content}\n`; });
       const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      const a = document.createElement('a'); a.href = url;
       a.download = `记忆备份_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
-    // ==================== 对话持久化 ====================
     function saveConversationData() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          history: conversationHistory,
-          memory_items: memoryItems,
-        }));
-      } catch (e) { console.error('保存对话失败', e); }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ history: conversationHistory, memory_items: memoryItems })); } catch (e) {}
     }
-
     function loadConversationData() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -694,22 +589,13 @@
       } catch (e) { return { history: [], memory_items: [] }; }
     }
 
-    // ==================== 智能记忆压缩 ====================
-    // 简单 Token 估算：中文约1.5字符/Token，英文标点约2字符/Token
-    function estimateTokens(text) {
-      const chinese = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-      return Math.ceil(chinese / 1.5 + (text.length - chinese) / 2);
-    }
-
-    // 异步后台压缩，不阻塞当前消息发送
+    function estimateTokens(text) { const chinese = (text.match(/[\u4e00-\u9fff]/g) || []).length; return Math.ceil(chinese / 1.5 + (text.length - chinese) / 2); }
     async function smartCompressHistory() {
       if (getTotalTokens() <= 50000) return;
-
       const backgroundTask = async () => {
         try {
           const res = await fetch('/api/summarize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messages: [...conversationHistory], existingMemory: memoryItems })
           });
           if (!res.ok) return;
@@ -725,45 +611,29 @@
           conversationHistory = newHistory;
           saveConversationData();
           displayBackgroundMessage('🧠 记忆已自动整合。');
-        } catch (err) { console.error('压缩失败', err); }
+        } catch (err) {}
       };
       backgroundTask();
     }
-
-    function getTotalTokens() {
-      return conversationHistory.reduce((acc, m) => acc + estimateTokens(m.content), 0);
-    }
-
-    // 显示后台提示消息
+    function getTotalTokens() { return conversationHistory.reduce((acc, m) => acc + estimateTokens(m.content), 0); }
     function displayBackgroundMessage(text) {
       const row = createMessageRow('assistant', text);
       row.querySelector('.msg').style.opacity = '0.8';
-      chatBox.appendChild(row);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      chatBox.appendChild(row); chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // ==================== 发送消息 ====================
     async function sendMessage() {
       const text = userInput.value.trim();
       if (!text) return;
-
-      // 先触发后台记忆压缩
       smartCompressHistory();
-
-      // 用户消息入库
       conversationHistory.push({ role: 'user', content: text });
       saveConversationData();
       addMessage('user', text);
-      userInput.value = '';
-      userInput.style.height = 'auto';
-      sendBtn.disabled = true;
+      userInput.value = ''; userInput.style.height = 'auto'; sendBtn.disabled = true;
 
-      // 显示打字动画（现在是标准消息行）
       const loadingRow = createTypingIndicator();
-      chatBox.appendChild(loadingRow);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      chatBox.appendChild(loadingRow); chatBox.scrollTop = chatBox.scrollHeight;
 
-      // 构建 API 消息
       const apiMessages = [];
       if (systemPersona) apiMessages.push({ role: 'system', content: systemPersona });
       if (memoryItems.length) apiMessages.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
@@ -771,94 +641,78 @@
 
       try {
         const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: apiMessages })
         });
-
         loadingRow.remove();
-
-        if (!res.ok) {
-          addMessage('assistant', `请求失败: HTTP ${res.status}`);
-          return;
-        }
-
+        if (!res.ok) { addMessage('assistant', `请求失败: HTTP ${res.status}`); return; }
         const data = await res.json();
         if (data.reply) {
           addMessage('assistant', data.reply);
           conversationHistory.push({ role: 'assistant', content: data.reply });
           saveConversationData();
-        } else {
-          addMessage('assistant', '出错啦：' + (data.error || '未知错误'));
-        }
+        } else { addMessage('assistant', '出错啦：' + (data.error || '未知错误')); }
       } catch (err) {
         loadingRow.remove();
         addMessage('assistant', '网络请求失败：' + err.message);
-      } finally {
-        sendBtn.disabled = false;
-      }
+      } finally { sendBtn.disabled = false; }
     }
 
-    // ==================== 打字指示器（改版：标准消息行） ====================
     function createTypingIndicator() {
       const row = document.createElement('div');
       row.className = 'typing-indicator-row';
-
-      // 占位头像（保持与AI头像一致）
       const avatar = document.createElement('div');
       avatar.className = 'avatar';
       const avatarData = settings.aiAvatar;
       if (avatarData && avatarData.base64) {
         avatar.innerHTML = `<img src="${avatarData.base64}" alt="avatar">`;
-      } else {
-        avatar.textContent = avatarData?.emoji || '🤖';
-      }
-
-      // 打字气泡
+      } else { avatar.textContent = avatarData?.emoji || '🤖'; }
       const bubble = document.createElement('div');
       bubble.className = 'typing-bubble';
       bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-
       row.appendChild(avatar);
       row.appendChild(bubble);
       return row;
     }
 
-    // ==================== 消息渲染（支持图片 / Emoji 头像） ====================
     function createMessageRow(role, content) {
       const row = document.createElement('div');
       row.className = `message-row ${role}`;
       row.classList.add(role === 'user' ? 'row-user' : 'row-assistant');
 
-      // 头像
       const avatar = document.createElement('div');
       avatar.className = 'avatar';
       const avatarData = role === 'user' ? settings.userAvatar : settings.aiAvatar;
       if (avatarData && avatarData.base64) {
         avatar.innerHTML = `<img src="${avatarData.base64}" alt="avatar">`;
-      } else {
-        avatar.textContent = avatarData?.emoji || (role === 'user' ? '😊' : '🤖');
-      }
+      } else { avatar.textContent = avatarData?.emoji || (role === 'user' ? '😊' : '🤖'); }
 
-      // 气泡
       const bubble = document.createElement('div');
       bubble.className = 'msg';
       if (role === 'assistant') {
-        try {
-          bubble.innerHTML = marked.parse(content);
-        } catch (e) {
-          bubble.textContent = content;
-        }
-      } else {
-        bubble.textContent = content;
-      }
+        try { bubble.innerHTML = marked.parse(content); } catch (e) { bubble.textContent = content; }
+        // ★ 自动为表格添加滚动容器
+        wrapTablesInBubble(bubble);
+      } else { bubble.textContent = content; }
 
       row.appendChild(avatar);
       row.appendChild(bubble);
       return row;
     }
 
-    // 添加一条消息到聊天框
+    // 自动包裹表格，使其可横向滚动
+    function wrapTablesInBubble(bubble) {
+      const tables = bubble.querySelectorAll('table');
+      tables.forEach(table => {
+        // 避免重复包裹
+        if (table.parentNode && table.parentNode.classList.contains('table-wrapper')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrapper';
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      });
+    }
+
     function addMessage(role, content) {
       const row = createMessageRow(role, content);
       row.classList.add('animate__animated', role === 'user' ? 'animate__fadeInRight' : 'animate__fadeInLeft');
@@ -867,13 +721,10 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // 渲染所有历史消息
     function renderAllMessages() {
       chatBox.innerHTML = '';
       conversationHistory.forEach(msg => {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          addMessage(msg.role, msg.content);
-        }
+        if (msg.role === 'user' || msg.role === 'assistant') addMessage(msg.role, msg.content);
       });
     }
   </script>
