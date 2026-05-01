@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DeepSeek 记忆管家</title>
   <link rel="stylesheet" href="style.css">
+  <!-- 可选动画库，轻量备用 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <!-- Markdown 解析 -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
   <!-- 微信引导 -->
-  <div id="wechatGuideOverlay" class="wechat-guide-overlay">
+  <div id="wechatGuide" class="wechat-guide">
     <div class="guide-card">
       <h3>🌐 在浏览器中打开</h3>
       <p>请点击右上角 <b>···</b>，选择 <b>在浏览器中打开</b> 获得完整体验。</p>
-      <button class="btn btn-primary" onclick="dismissGuide()">知道了</button>
+      <button class="btn-primary" onclick="dismissGuide()" style="padding:10px 20px;border:none;border-radius:20px;font-weight:600;">知道了</button>
     </div>
   </div>
 
@@ -24,60 +26,60 @@
 
   <!-- 头部 -->
   <div class="header">
-    <input type="text" class="editable-title" id="aiNameInput" value="DeepSeek" placeholder="AI名字" maxlength="15">
-    <div class="settings-icon-btn" onclick="openSettings()">⚙️</div>
+    <input type="text" class="ai-name-input" id="aiNameInput" value="DeepSeek" maxlength="15">
+    <div class="settings-btn" onclick="openSettings()">⚙️</div>
   </div>
 
-  <!-- 聊天窗口 -->
-  <div id="chat-box"></div>
+  <!-- 聊天区域 -->
+  <div class="chat-container" id="chatBox"></div>
 
   <!-- 输入区域 -->
-  <div class="input-area">
-    <textarea id="user-input" rows="1" placeholder="输入消息..."></textarea>
-    <button class="btn btn-send" id="send-btn" onclick="sendMessage()">发送</button>
-    <button class="btn btn-plus" id="plus-btn" onclick="togglePlusMenu()">+</button>
+  <div class="input-area" style="position:relative;">
+    <textarea id="userInput" rows="1" placeholder="输入消息..."></textarea>
+    <button class="send-btn" id="sendButton" onclick="sendMessage()">发送</button>
+    <button class="plus-btn" id="plusButton" onclick="togglePlusMenu()">+</button>
     <div class="plus-menu" id="plusMenu">
       <div class="plus-menu-item" onclick="handleImageUpload()">🖼️ 图片理解 (即将上线)</div>
     </div>
   </div>
 
-  <!-- 设置面板 -->
-  <div class="overlay" id="settingsOverlay">
+  <!-- 设置弹窗 -->
+  <div class="modal-overlay" id="settingsOverlay">
     <div class="modal">
       <h3>⚙️ 设置</h3>
 
-      <div class="setting-item">
+      <div class="form-item">
         <label>你的头像 (Emoji 或 上传)</label>
         <div class="avatar-upload-row">
           <div class="avatar-preview" id="userPreviewAvatar">😊</div>
-          <input type="text" id="userAvatarInput" placeholder="留空显示'你'" maxlength="4">
-          <input type="file" id="userAvatarFile" accept="image/*" style="display:none" onchange="handleAvatarUpload('user', this)">
+          <input type="text" id="userAvatarInput" placeholder="留空显示'你'" maxlength="4" style="flex:1;">
+          <input type="file" id="userAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarUpload('user', this)">
           <div class="upload-btn" onclick="document.getElementById('userAvatarFile').click()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
         </div>
       </div>
 
-      <div class="setting-item">
+      <div class="form-item">
         <label>AI 头像 (Emoji 或 上传)</label>
         <div class="avatar-upload-row">
           <div class="avatar-preview" id="aiPreviewAvatar">🤖</div>
-          <input type="text" id="aiAvatarInput" placeholder="留空显示首字母" maxlength="4">
-          <input type="file" id="aiAvatarFile" accept="image/*" style="display:none" onchange="handleAvatarUpload('ai', this)">
+          <input type="text" id="aiAvatarInput" placeholder="留空显示首字母" maxlength="4" style="flex:1;">
+          <input type="file" id="aiAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarUpload('ai', this)">
           <div class="upload-btn" onclick="document.getElementById('aiAvatarFile').click()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
         </div>
       </div>
 
-      <div class="setting-item">
+      <div class="form-item">
         <label>AI 人设 (可选)</label>
         <input type="text" id="personaInput" placeholder="例如：你是一个风趣的助手">
       </div>
 
-      <div class="setting-row">
+      <div class="switch-row">
         <label>🔍 联网搜索</label>
-        <label class="toggle-switch">
+        <label class="switch">
           <input type="checkbox" id="searchToggle">
           <span class="slider"></span>
         </label>
@@ -86,45 +88,45 @@
       <div class="modal-actions">
         <button class="btn-export" onclick="openExport()">📤 导出</button>
         <button class="btn-import" onclick="document.getElementById('importFileInput').click()">📥 导入</button>
-        <input type="file" id="importFileInput" accept=".txt" style="display:none" onchange="importMemory(this)">
+        <input type="file" id="importFileInput" accept=".txt" style="display:none;" onchange="importMemory(this)">
         <button class="btn-danger" onclick="clearMemory()">清空</button>
         <button class="btn-primary" onclick="saveSettings()">保存</button>
       </div>
     </div>
   </div>
 
-  <!-- 导出面板 -->
-  <div class="overlay" id="exportOverlay">
+  <!-- 导出弹窗 -->
+  <div class="modal-overlay" id="exportOverlay">
     <div class="modal">
       <h3>📤 选择导出内容</h3>
       <div><label><input type="checkbox" id="exportAiName" checked> AI 名字</label></div>
       <div><label><input type="checkbox" id="exportPersona" checked> 人设</label></div>
       <div><label><input type="checkbox" id="exportMemory" checked> 长期记忆</label></div>
       <div class="export-preview" id="exportPreview"></div>
-      <div class="export-actions">
-        <button class="btn-cancel" onclick="closeExport()">取消</button>
-        <button class="btn-confirm" onclick="doExport()">确认导出</button>
+      <div class="modal-actions">
+        <button class="btn-danger" onclick="closeExport()">取消</button>
+        <button class="btn-primary" onclick="doExport()">确认导出</button>
       </div>
     </div>
   </div>
 
   <script>
-    // ==================== 全局保护 ====================
+    // ==================== 全局错误保护 ====================
     window.addEventListener('error', function(e) {
-      console.error('捕获错误:', e.error);
+      console.error('捕获错误:', e.message);
     });
 
     // ==================== 微信检测 ====================
     (function() {
       var ua = navigator.userAgent.toLowerCase();
       if (ua.indexOf('micromessenger') !== -1 || ua.indexOf('wechat') !== -1) {
-        document.getElementById('wechatGuideOverlay').classList.add('active');
-        document.getElementById('send-btn').disabled = true;
+        document.getElementById('wechatGuide').classList.add('active');
+        document.getElementById('sendButton').disabled = true;
       }
     })();
 
     function dismissGuide() {
-      document.getElementById('wechatGuideOverlay').classList.remove('active');
+      document.getElementById('wechatGuide').classList.remove('active');
       showToast('微信内功能受限，建议在浏览器中打开');
     }
 
@@ -142,11 +144,11 @@
       }, dur);
     }
 
-    // ==================== DOM引用 ====================
-    var chatBox = document.getElementById('chat-box');
-    var userInput = document.getElementById('user-input');
-    var sendBtn = document.getElementById('send-btn');
-    var plusBtn = document.getElementById('plus-btn');
+    // ==================== DOM 元素 ====================
+    var chatBox = document.getElementById('chatBox');
+    var userInput = document.getElementById('userInput');
+    var sendBtn = document.getElementById('sendButton');
+    var plusBtn = document.getElementById('plusButton');
     var plusMenu = document.getElementById('plusMenu');
     var aiNameInput = document.getElementById('aiNameInput');
     var settingsOverlay = document.getElementById('settingsOverlay');
@@ -159,9 +161,9 @@
     var importFileInput = document.getElementById('importFileInput');
     var exportOverlay = document.getElementById('exportOverlay');
 
-    // ==================== 设置管理 ====================
-    var STORAGE_KEY = 'ds_chat_v5';
-    var SETTINGS_KEY = 'ds_settings_v4';
+    // ==================== 用户设置 ====================
+    var STORAGE_KEY = 'deepseek_memory_v1';
+    var SETTINGS_KEY = 'deepseek_settings_v1';
     var MAX_TOKENS = 10000;
 
     var settings = {
@@ -172,23 +174,37 @@
       aiAvatar: {}
     };
 
-    function loadSettingsFromStorage() {
-      try {
-        var saved = localStorage.getItem(SETTINGS_KEY);
-        if (saved) {
-          var parsed = JSON.parse(saved);
-          if (parsed.aiName) settings.aiName = parsed.aiName;
-          if (parsed.persona !== undefined) settings.persona = parsed.persona;
-          if (parsed.enableSearch !== undefined) settings.enableSearch = parsed.enableSearch;
-          if (parsed.userAvatar) settings.userAvatar = parsed.userAvatar;
-          if (parsed.aiAvatar) settings.aiAvatar = parsed.aiAvatar;
-        }
-      } catch(e) {}
-    }
-    loadSettingsFromStorage();
+    // 加载设置
+    try {
+      var savedSettings = localStorage.getItem(SETTINGS_KEY);
+      if (savedSettings) {
+        var parsed = JSON.parse(savedSettings);
+        if (parsed.aiName) settings.aiName = parsed.aiName;
+        if (parsed.persona !== undefined) settings.persona = parsed.persona;
+        if (parsed.enableSearch !== undefined) settings.enableSearch = parsed.enableSearch;
+        if (parsed.userAvatar) settings.userAvatar = parsed.userAvatar;
+        if (parsed.aiAvatar) settings.aiAvatar = parsed.aiAvatar;
+      }
+    } catch(e) {}
 
-    function saveSettingsToStorage() {
+    function saveSettings() {
+      // 表单赋值
+      settings.aiName = aiNameInput.value.trim() || 'DeepSeek';
+      settings.persona = personaInput.value.trim();
+      settings.enableSearch = searchToggle.checked;
+      var userEmoji = userAvatarInput.value.trim();
+      settings.userAvatar = userEmoji ? { emoji: userEmoji } : {};
+      var aiEmoji = aiAvatarInput.value.trim();
+      settings.aiAvatar = aiEmoji ? { emoji: aiEmoji } : {};
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      // 更新状态变量
+      systemPersona = settings.persona;
+      enableSearch = settings.enableSearch;
+      aiName = settings.aiName;
+      closeSettings();
+      refreshAvatarPreviews();
+      renderAllMessages(); // 刷新头像和名字
+      showToast('设置已保存');
     }
 
     function applySettingsToUI() {
@@ -201,21 +217,23 @@
     }
     applySettingsToUI();
 
-    function refreshAvatarPreviews() {
-      renderAvatarPreview('user', userPreviewAvatar);
-      renderAvatarPreview('ai', aiPreviewAvatar);
-    }
-
+    // ==================== 头像相关 ====================
     function getAvatarDisplay(who) {
       var avatarData = who === 'user' ? settings.userAvatar : settings.aiAvatar;
       if (avatarData && avatarData.base64) {
         return '<img src="' + avatarData.base64 + '" alt="avatar">';
       }
       if (avatarData && avatarData.emoji) return avatarData.emoji;
-      return who === 'user' ? '你' : (settings.aiName || 'AI').charAt(0);
+      if (who === 'user') return '你';
+      return (settings.aiName || 'AI').charAt(0);
     }
 
-    function renderAvatarPreview(who, el) {
+    function refreshAvatarPreviews() {
+      renderPreview('user', userPreviewAvatar);
+      renderPreview('ai', aiPreviewAvatar);
+    }
+
+    function renderPreview(who, el) {
       var display = getAvatarDisplay(who);
       if (display.indexOf('<img') === 0) {
         el.innerHTML = display;
@@ -225,7 +243,7 @@
       }
     }
 
-    // ==================== 头像上传 ====================
+    // 头像上传
     function handleAvatarUpload(who, fileInput) {
       var file = fileInput.files && fileInput.files[0];
       if (!file) return;
@@ -255,7 +273,7 @@
             settings.aiAvatar = { base64: base64 };
             aiAvatarInput.value = '';
           }
-          saveSettingsToStorage();
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
           refreshAvatarPreviews();
           renderAllMessages();
         };
@@ -263,22 +281,22 @@
       reader.readAsDataURL(file);
     }
 
-    // ==================== 状态变量 ====================
+    // ==================== 对话状态 ====================
     var systemPersona = settings.persona;
     var aiName = settings.aiName;
     var enableSearch = settings.enableSearch;
 
-    // ==================== 对话数据 ====================
-    function loadConversationData() {
-      try {
-        var saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch(e) {}
-      return { history: [], memory_items: [] };
-    }
-    var conversationData = loadConversationData();
-    var conversationHistory = conversationData.history || [];
-    var memoryItems = conversationData.memory_items || [];
+    // 加载对话记忆
+    var conversationHistory = [];
+    var memoryItems = [];
+    try {
+      var savedConv = localStorage.getItem(STORAGE_KEY);
+      if (savedConv) {
+        var convData = JSON.parse(savedConv);
+        conversationHistory = convData.history || [];
+        memoryItems = convData.memory_items || [];
+      }
+    } catch(e) {}
 
     function saveConversationData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -287,11 +305,183 @@
       }));
     }
 
+    // ==================== 记忆压缩 ====================
+    function estimateTokens(text) {
+      var chinese = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+      return Math.ceil(chinese / 1.5 + (text.length - chinese) / 2);
+    }
+    function getTotalTokens() {
+      var total = 0;
+      for (var i = 0; i < conversationHistory.length; i++) {
+        total += estimateTokens(conversationHistory[i].content);
+      }
+      return total;
+    }
+
+    function smartCompressHistory() {
+      if (getTotalTokens() <= MAX_TOKENS) return;
+      // 异步发送压缩请求
+      var messagesCopy = conversationHistory.slice();
+      fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messagesCopy, existingMemory: memoryItems })
+      }).then(function(res) {
+        if (!res.ok) return;
+        return res.json();
+      }).then(function(data) {
+        if (!data) return;
+        var newItems = data.memory_items || [];
+        var summary = data.summary || '';
+        // 合并记忆（去重）
+        for (var i = 0; i < newItems.length; i++) {
+          if (memoryItems.indexOf(newItems[i]) === -1) {
+            memoryItems.push(newItems[i]);
+          }
+        }
+        // 保留最近50条消息
+        var recent = conversationHistory.slice(-50);
+        var newHistory = [];
+        if (systemPersona) newHistory.push({ role: 'system', content: systemPersona });
+        if (memoryItems.length > 0) newHistory.push({ role: 'system', content: '[长期记忆]\n' + memoryItems.join('\n') });
+        if (summary) newHistory.push({ role: 'system', content: '[对话摘要]\n' + summary });
+        for (var j = 0; j < recent.length; j++) {
+          newHistory.push(recent[j]);
+        }
+        conversationHistory = newHistory;
+        saveConversationData();
+        showToast('🧠 记忆已自动整合');
+      }).catch(function(e) {
+        console.error('记忆压缩失败', e);
+      });
+    }
+
+    // ==================== 消息发送 ====================
+    function sendMessage() {
+      var text = userInput.value.trim();
+      if (!text) return;
+      closePlusMenu();
+      smartCompressHistory();
+
+      conversationHistory.push({ role: 'user', content: text });
+      saveConversationData();
+      addMessage('user', text);
+      userInput.value = '';
+      userInput.style.height = 'auto';
+      sendBtn.disabled = true;
+
+      // 打字动画
+      var typingRow = createTypingIndicator();
+      chatBox.appendChild(typingRow);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // 构建 API 消息
+      var apiMessages = [];
+      if (systemPersona) apiMessages.push({ role: 'system', content: systemPersona });
+      if (memoryItems.length > 0) apiMessages.push({ role: 'system', content: '[长期记忆]\n' + memoryItems.join('\n') });
+      for (var i = 0; i < conversationHistory.length; i++) {
+        apiMessages.push(conversationHistory[i]);
+      }
+
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMessages, enable_search: enableSearch })
+      }).then(function(res) {
+        if (typingRow && typingRow.parentNode) typingRow.parentNode.removeChild(typingRow);
+        if (!res.ok) {
+          addMessage('assistant', '请求失败 (' + res.status + ')，请稍后重试');
+          sendBtn.disabled = false;
+          return;
+        }
+        return res.json();
+      }).then(function(data) {
+        if (!data) return;
+        if (data.reply) {
+          addMessage('assistant', data.reply);
+          conversationHistory.push({ role: 'assistant', content: data.reply });
+          saveConversationData();
+        } else {
+          addMessage('assistant', '出错啦：' + (data.error || '服务器返回了空内容'));
+        }
+        sendBtn.disabled = false;
+      }).catch(function(err) {
+        if (typingRow && typingRow.parentNode) typingRow.parentNode.removeChild(typingRow);
+        addMessage('assistant', '网络请求失败，请重试');
+        sendBtn.disabled = false;
+      });
+    }
+
+    // ==================== 渲染函数 ====================
+    function createTypingIndicator() {
+      var row = document.createElement('div');
+      row.className = 'typing-row';
+      var avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.innerHTML = getAvatarDisplay('ai');
+      var bubble = document.createElement('div');
+      bubble.className = 'typing-bubble';
+      bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      return row;
+    }
+
+    function addMessage(role, content) {
+      var row = document.createElement('div');
+      row.className = 'message-row ' + role;
+      // 头像
+      var avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.innerHTML = getAvatarDisplay(role === 'user' ? 'user' : 'ai');
+      // 气泡
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (role === 'assistant') {
+        try {
+          bubble.innerHTML = marked.parse(content);
+        } catch(e) {
+          bubble.textContent = content;
+        }
+        // 包装表格
+        var tables = bubble.querySelectorAll('table');
+        for (var i = 0; i < tables.length; i++) {
+          var table = tables[i];
+          if (table.parentNode.classList.contains('table-wrapper')) continue;
+          var wrapper = document.createElement('div');
+          wrapper.className = 'table-wrapper';
+          table.parentNode.insertBefore(wrapper, table);
+          wrapper.appendChild(table);
+        }
+      } else {
+        bubble.textContent = content;
+      }
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      // 附加简单动画类（如果animate.css可用）
+      row.classList.add('animate__animated');
+      row.classList.add(role === 'user' ? 'animate__fadeInRight' : 'animate__fadeInLeft');
+      row.style.setProperty('--animate-duration', '0.3s');
+      chatBox.appendChild(row);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function renderAllMessages() {
+      chatBox.innerHTML = '';
+      for (var i = 0; i < conversationHistory.length; i++) {
+        var msg = conversationHistory[i];
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          addMessage(msg.role, msg.content);
+        }
+      }
+    }
+    renderAllMessages();
+
     // ==================== 事件绑定 ====================
     aiNameInput.addEventListener('input', function() {
       settings.aiName = this.value;
       aiName = this.value;
-      saveSettingsToStorage();
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
       refreshAvatarPreviews();
       renderAllMessages();
     });
@@ -332,24 +522,6 @@
     settingsOverlay.addEventListener('click', function(e) {
       if (e.target === settingsOverlay) closeSettings();
     });
-
-    function saveSettings() {
-      settings.persona = personaInput.value.trim();
-      systemPersona = settings.persona;
-      settings.enableSearch = searchToggle.checked;
-      enableSearch = settings.enableSearch;
-
-      var userEmoji = userAvatarInput.value.trim();
-      settings.userAvatar = userEmoji ? { emoji: userEmoji } : {};
-
-      var aiEmoji = aiAvatarInput.value.trim();
-      settings.aiAvatar = aiEmoji ? { emoji: aiEmoji } : {};
-
-      saveSettingsToStorage();
-      closeSettings();
-      refreshAvatarPreviews();
-      renderAllMessages();
-    }
 
     function clearMemory() {
       if (confirm('确定要清空所有记忆吗？此操作不可恢复。')) {
@@ -416,7 +588,7 @@
             aiName = parsed.aiName;
             settings.persona = parsed.persona;
             systemPersona = parsed.persona;
-            saveSettingsToStorage();
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
             memoryItems = parsed.memoryItems;
             conversationHistory = [];
             saveConversationData();
@@ -457,184 +629,10 @@
       return result;
     }
 
-    // ==================== 记忆压缩 ====================
-    function estimateTokens(text) {
-      var chinese = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-      return Math.ceil(chinese / 1.5 + (text.length - chinese) / 2);
-    }
-    function getTotalTokens() {
-      var total = 0;
-      for (var i = 0; i < conversationHistory.length; i++) {
-        total += estimateTokens(conversationHistory[i].content);
-      }
-      return total;
-    }
-    function smartCompressHistory() {
-      if (getTotalTokens() <= MAX_TOKENS) return;
-      // 异步执行
-      setTimeout(function() {
-        fetch('/api/summarize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: conversationHistory.slice(),
-            existingMemory: memoryItems
-          })
-        }).then(function(res) {
-          if (!res.ok) return;
-          return res.json();
-        }).then(function(data) {
-          if (!data) return;
-          var newItems = data.memory_items || [];
-          var summary = data.summary || '';
-          // 合并记忆
-          var combined = memoryItems.slice();
-          for (var i = 0; i < newItems.length; i++) {
-            if (combined.indexOf(newItems[i]) === -1) {
-              combined.push(newItems[i]);
-            }
-          }
-          memoryItems = combined;
-          var recent = conversationHistory.slice(-50);
-          var newHistory = [];
-          if (systemPersona) newHistory.push({ role: 'system', content: systemPersona });
-          if (memoryItems.length > 0) newHistory.push({ role: 'system', content: '[长期记忆]\n' + memoryItems.join('\n') });
-          if (summary) newHistory.push({ role: 'system', content: '[对话摘要]\n' + summary });
-          for (var j = 0; j < recent.length; j++) {
-            newHistory.push(recent[j]);
-          }
-          conversationHistory = newHistory;
-          saveConversationData();
-          showToast('🧠 记忆已自动整合');
-        }).catch(function() {});
-      }, 100);
-    }
-
-    // ==================== 发送消息 ====================
-    function sendMessage() {
-      var text = userInput.value.trim();
-      if (!text) return;
-      closePlusMenu();
-      smartCompressHistory();
-
-      conversationHistory.push({ role: 'user', content: text });
-      saveConversationData();
-      addMessage('user', text);
-      userInput.value = '';
-      userInput.style.height = 'auto';
-      sendBtn.disabled = true;
-
-      var loadingRow = createTypingIndicator();
-      chatBox.appendChild(loadingRow);
-      chatBox.scrollTop = chatBox.scrollHeight;
-
-      var apiMessages = [];
-      if (systemPersona) apiMessages.push({ role: 'system', content: systemPersona });
-      if (memoryItems.length > 0) apiMessages.push({ role: 'system', content: '[长期记忆]\n' + memoryItems.join('\n') });
-      for (var i = 0; i < conversationHistory.length; i++) {
-        apiMessages.push(conversationHistory[i]);
-      }
-
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages, enable_search: enableSearch })
-      }).then(function(res) {
-        loadingRow.remove();
-        if (!res.ok) {
-          addMessage('assistant', '请求失败 (' + res.status + ')：请稍后重试');
-          sendBtn.disabled = false;
-          return;
-        }
-        return res.json();
-      }).then(function(data) {
-        if (!data) return;
-        if (data.reply) {
-          addMessage('assistant', data.reply);
-          conversationHistory.push({ role: 'assistant', content: data.reply });
-          saveConversationData();
-        } else {
-          addMessage('assistant', '出错啦：' + (data.error || '服务器返回了空内容'));
-        }
-        sendBtn.disabled = false;
-      }).catch(function() {
-        loadingRow.remove();
-        addMessage('assistant', '网络请求失败，请重试');
-        sendBtn.disabled = false;
-      });
-    }
-
-    // ==================== 渲染函数 ====================
-    function createTypingIndicator() {
-      var row = document.createElement('div');
-      row.className = 'typing-indicator-row';
-      var avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      avatar.innerHTML = getAvatarDisplay('ai');
-      var bubble = document.createElement('div');
-      bubble.className = 'typing-bubble';
-      bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      return row;
-    }
-
-    function createMessageRow(role, content) {
-      var row = document.createElement('div');
-      row.className = 'message-row ' + role;
-      if (role === 'user') row.classList.add('row-user');
-      else row.classList.add('row-assistant');
-
-      var avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      avatar.innerHTML = getAvatarDisplay(role === 'user' ? 'user' : 'ai');
-
-      var bubble = document.createElement('div');
-      bubble.className = 'msg';
-      if (role === 'assistant') {
-        try {
-          bubble.innerHTML = marked.parse(content);
-        } catch(e) {
-          bubble.textContent = content;
-        }
-        var tables = bubble.querySelectorAll('table');
-        for (var i = 0; i < tables.length; i++) {
-          var table = tables[i];
-          if (table.parentNode.classList.contains('table-wrapper')) continue;
-          var wrapper = document.createElement('div');
-          wrapper.className = 'table-wrapper';
-          table.parentNode.insertBefore(wrapper, table);
-          wrapper.appendChild(table);
-        }
-      } else {
-        bubble.textContent = content;
-      }
-
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      return row;
-    }
-
-    function addMessage(role, content) {
-      var row = createMessageRow(role, content);
-      row.classList.add('animate__animated');
-      row.classList.add(role === 'user' ? 'animate__fadeInRight' : 'animate__fadeInLeft');
-      row.style.setProperty('--animate-duration', '0.3s');
-      chatBox.appendChild(row);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function renderAllMessages() {
-      chatBox.innerHTML = '';
-      for (var i = 0; i < conversationHistory.length; i++) {
-        var msg = conversationHistory[i];
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          addMessage(msg.role, msg.content);
-        }
-      }
-    }
-
-    renderAllMessages();
+    // 确保关闭弹窗的快捷方式（点击遮罩）
+    exportOverlay.addEventListener('click', function(e) {
+      if (e.target === exportOverlay) closeExport();
+    });
   </script>
 </body>
 </html>
