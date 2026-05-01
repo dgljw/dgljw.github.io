@@ -15,7 +15,6 @@
       height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
     }
 
-    /* 微信引导遮罩 */
     .wechat-guide-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
@@ -24,7 +23,6 @@
       display: none;
     }
     .wechat-guide-overlay.active { display: flex; }
-
     .guide-card {
       background: rgba(255,255,255,0.95); color: #1d1d1f;
       padding: 32px 24px; border-radius: 32px; max-width: 340px;
@@ -32,10 +30,7 @@
       animation: fadeInUp 0.4s ease;
       position: relative;
     }
-    .guide-card .icon-arrow {
-      font-size: 2.5rem; color: #007aff;
-      margin-bottom: 8px;
-    }
+    .guide-card .icon-arrow { font-size: 2.5rem; color: #007aff; margin-bottom: 8px; }
     .guide-card h3 { font-size: 1.3rem; margin-bottom: 12px; }
     .guide-card p { font-size: 0.92rem; color: #555; margin-bottom: 16px; line-height: 1.5; }
     .guide-card .step-text {
@@ -43,14 +38,8 @@
       background: #f0f0f5; padding: 6px 12px; border-radius: 20px;
       font-weight: 600; color: #333; margin: 4px 0;
     }
-    .guide-card .action-buttons {
-      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
-    }
-    .btn-guide {
-      padding: 12px 24px; border-radius: 30px; font-weight: 600;
-      font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.2s;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
+    .guide-card .action-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn-guide { padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     .btn-guide:active { transform: scale(0.96); }
     .btn-copy { background: #007aff; color: white; }
     .btn-copy:hover { background: #0060df; }
@@ -121,7 +110,31 @@
 
     @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
     @keyframes fadeInUpBounce { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* 导出选择器 */
+    .export-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4); z-index: 150; display: none;
+      justify-content: center; align-items: center;
+    }
+    .export-overlay.open { display: flex; }
+    .export-modal {
+      background: #fff; border-radius: 32px; padding: 24px; width: 90%;
+      max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      animation: modalPopIn 0.3s ease; max-height: 80vh; overflow-y: auto;
+    }
+    .export-modal h3 { margin-bottom: 16px; font-weight: 600; }
+    .export-check-item {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+      font-size: 0.95rem; color: #1d1d1f;
+    }
+    .export-preview {
+      background: #f5f5f7; border-radius: 16px; padding: 12px;
+      font-size: 0.85rem; white-space: pre-wrap; max-height: 200px;
+      overflow-y: auto; margin: 12px 0; font-family: monospace;
+      color: #333;
+    }
+    .export-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 
     .settings-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; justify-content: center; align-items: center; }
     .settings-overlay.open { display: flex; }
@@ -164,12 +177,13 @@
     .btn-primary:hover { background: #0066d6; }
 
     @keyframes modalPopIn { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @supports (padding-bottom: env(safe-area-inset-bottom)) { .input-area { padding-bottom: env(safe-area-inset-bottom); } }
     @media (max-width: 400px) { .message-row { max-width: 95%; } .typing-indicator-row { max-width: 95%; } }
   </style>
 </head>
 <body>
-  <!-- 微信环境引导面板 -->
+  <!-- 微信引导 -->
   <div id="wechatGuideOverlay" class="wechat-guide-overlay">
     <div class="guide-card">
       <div class="icon-arrow">↗️</div>
@@ -178,6 +192,30 @@
       <div class="action-buttons">
         <button class="btn-guide btn-copy" onclick="copyUrl()">复制链接</button>
         <button class="btn-guide btn-dismiss" onclick="dismissGuide()">知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导出选择器 -->
+  <div class="export-overlay" id="exportOverlay">
+    <div class="export-modal">
+      <h3>📤 选择导出内容</h3>
+      <div class="export-check-item">
+        <input type="checkbox" id="exportAiName" checked onchange="updateExportPreview()">
+        <label for="exportAiName">AI 名字</label>
+      </div>
+      <div class="export-check-item">
+        <input type="checkbox" id="exportPersona" checked onchange="updateExportPreview()">
+        <label for="exportPersona">人设</label>
+      </div>
+      <div class="export-check-item">
+        <input type="checkbox" id="exportMemory" checked onchange="updateExportPreview()">
+        <label for="exportMemory">长期记忆</label>
+      </div>
+      <div class="export-preview" id="exportPreview"></div>
+      <div class="export-actions">
+        <button class="btn-danger" onclick="closeExport()">取消</button>
+        <button class="btn-primary" onclick="doExport()">确认导出</button>
       </div>
     </div>
   </div>
@@ -242,7 +280,7 @@
       </div>
 
       <div class="modal-actions">
-        <button class="btn-export" onclick="exportMemory()">📤 导出</button>
+        <button class="btn-export" onclick="openExport()">📤 导出</button>
         <button class="btn-import" onclick="document.getElementById('importFileInput').click()">📥 导入</button>
         <input type="file" id="importFileInput" accept=".txt" style="display:none;" onchange="importMemory(this)">
         <button class="btn-danger" onclick="clearMemory()">清空</button>
@@ -252,13 +290,11 @@
   </div>
 
   <script>
-    // ==================== 微信检测与引导 ====================
+    // ==================== 微信检测 ====================
     (function() {
       const ua = navigator.userAgent.toLowerCase();
-      const isWechat = ua.includes('micromessenger') || ua.includes('wechat');
-      if (isWechat) {
+      if (ua.includes('micromessenger') || ua.includes('wechat')) {
         document.getElementById('wechatGuideOverlay').classList.add('active');
-        // 禁用发送按钮以避免微信内无效请求
         const sendBtn = document.getElementById('send-btn');
         if (sendBtn) sendBtn.disabled = true;
       }
@@ -266,33 +302,16 @@
 
     function dismissGuide() {
       document.getElementById('wechatGuideOverlay').classList.remove('active');
-      // 仍然禁用发送按钮，因为微信内功能受限，提醒用户去浏览器
       showToast('微信内功能受限，建议在浏览器中打开');
     }
 
     function copyUrl() {
       const url = window.location.href;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-          showToast('链接已复制，请在浏览器中打开');
-        }).catch(() => {
-          showToast('复制失败，请手动复制链接');
-        });
+        navigator.clipboard.writeText(url).then(() => showToast('链接已复制，请在浏览器中打开'))
+          .catch(() => showToast('复制失败，请手动复制链接'));
       } else {
-        // 尝试旧方式
-        const textarea = document.createElement('textarea');
-        textarea.value = url;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-          document.execCommand('copy');
-          showToast('链接已复制，请在浏览器中打开');
-        } catch (e) {
-          showToast('复制失败，请手动复制链接');
-        }
-        document.body.removeChild(textarea);
+        prompt('请手动复制链接:', url);
       }
     }
 
@@ -303,13 +322,10 @@
       if (toastTimer) clearTimeout(toastTimer);
       toast.textContent = message;
       toast.classList.add('show');
-      toastTimer = setTimeout(() => {
-        toast.classList.remove('show');
-        toastTimer = null;
-      }, duration);
+      toastTimer = setTimeout(() => { toast.classList.remove('show'); toastTimer = null; }, duration);
     }
 
-    // ==================== DOM 元素 ====================
+    // ==================== DOM ====================
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
@@ -324,6 +340,7 @@
     const userPreviewAvatar = document.getElementById('userPreviewAvatar');
     const aiPreviewAvatar = document.getElementById('aiPreviewAvatar');
     const importFileInput = document.getElementById('importFileInput');
+    const exportOverlay = document.getElementById('exportOverlay');
 
     // ==================== 设置 ====================
     const STORAGE_KEY = 'deepseek_chat_memory_v5';
@@ -435,31 +452,49 @@
       }
     }
 
-    // ==================== 导出 ====================
-    function exportMemory() {
-      let text = `=== AI 名字 ===\n${settings.aiName}\n\n=== 人设 ===\n${settings.persona || '(无)'}\n\n=== 长期记忆 ===\n`;
-      if (memoryItems.length > 0) {
-        text += memoryItems.map(item => `- ${item}`).join('\n');
-      } else {
-        text += '(无)';
+    // ==================== 导出（分类勾选） ====================
+    function openExport() {
+      updateExportPreview();
+      exportOverlay.classList.add('open');
+    }
+
+    function closeExport() {
+      exportOverlay.classList.remove('open');
+    }
+
+    function updateExportPreview() {
+      const includeAiName = document.getElementById('exportAiName').checked;
+      const includePersona = document.getElementById('exportPersona').checked;
+      const includeMemory = document.getElementById('exportMemory').checked;
+
+      let text = '';
+      if (includeAiName) text += `=== AI 名字 ===\n${settings.aiName}\n\n`;
+      if (includePersona) text += `=== 人设 ===\n${settings.persona || '(无)'}\n\n`;
+      if (includeMemory) {
+        text += `=== 长期记忆 ===\n`;
+        if (memoryItems.length > 0) {
+          text += memoryItems.map(item => `- ${item}`).join('\n');
+        } else {
+          text += '(无)';
+        }
+      }
+      document.getElementById('exportPreview').textContent = text.trim() || '(未选择任何内容)';
+    }
+
+    function doExport() {
+      const text = document.getElementById('exportPreview').textContent;
+      if (!text || text === '(未选择任何内容)') {
+        showToast('请至少勾选一项导出内容');
+        return;
       }
       const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = `记忆备份_${new Date().toISOString().slice(0,10)}.txt`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(() => {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => {
-            showToast('📤 已复制到剪贴板（微信不支持直接下载）');
-          }).catch(() => {
-            showToast('📤 导出失败，请用系统浏览器打开');
-          });
-        } else {
-          showToast('📤 导出失败，请用系统浏览器打开');
-        }
-      }, 500);
       URL.revokeObjectURL(url);
+      closeExport();
+      showToast('📤 记忆已导出');
     }
 
     // ==================== 导入 ====================
