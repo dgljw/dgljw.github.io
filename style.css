@@ -112,8 +112,25 @@ textarea:focus { border-color: #007aff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1
 .plus-menu-item:hover { background: #f5f5f7; transform: translateX(2px); }
 
 /* 打字指示器 */
-.typing-indicator-row { display: flex; align-items: flex-end; gap: 10px; max-width: 92%; align-self: flex-start; }
-.typing-bubble { display: flex; align-items: center; gap: 4px; padding: 12px 18px; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.06); border-radius: 24px; border-bottom-left-radius: 8px; }
+.typing-indicator-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 92%;
+  align-self: flex-start;
+  overflow: hidden;            /* 防止三个点冲出 */
+}
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 18px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 24px;
+  border-bottom-left-radius: 8px;
+  overflow: hidden;            /* 双保险 */
+}
 .dot { width: 8px; height: 8px; background: #888; border-radius: 50%; animation: bounce 1.4s ease-in-out infinite; }
 .dot:nth-child(2) { animation-delay: 0.2s; }
 .dot:nth-child(3) { animation-delay: 0.4s; }
@@ -144,7 +161,6 @@ textarea:focus { border-color: #007aff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1
   overflow-y: auto; margin: 12px 0; font-family: monospace;
   color: #333;
 }
-/* ★ 修复：按钮行居中，间距均匀，按钮等宽 */
 .export-actions {
   display: flex; gap: 12px; justify-content: center; margin-top: 16px;
 }
