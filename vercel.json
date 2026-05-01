@@ -1,7 +1,16 @@
 {
   "functions": {
     "api/chat.js": {
-      "maxDuration": 60
+      "maxDuration": 10
+    },
+    "api/summarize.js": {
+      "maxDuration": 10
+    },
+    "api/emoji-proxy.js": {
+      "maxDuration": 10
+    },
+    "api/vision.js": {
+      "maxDuration": 10
     }
   }
 }

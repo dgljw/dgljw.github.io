@@ -3,636 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DeepSeek 记忆管家</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- 可选动画库，轻量备用 -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-  <!-- Markdown 解析 -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>小金鱼 - 记忆管家</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Markdown 渲染库 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
 </head>
 <body>
+  <div class="app-container">
+    <!-- 头部 -->
+    <header class="chat-header">
+      <h1 id="chat-title" class="chat-title">小金鱼</h1>
+      <div class="header-actions">
+        <button id="settings-btn" class="header-btn">⚙️</button>
+      </div>
+    </header>
 
-  <!-- 微信引导 -->
-  <div id="wechatGuide" class="wechat-guide">
-    <div class="guide-card">
-      <h3>🌐 在浏览器中打开</h3>
-      <p>请点击右上角 <b>···</b>，选择 <b>在浏览器中打开</b> 获得完整体验。</p>
-      <button class="btn-primary" onclick="dismissGuide()" style="padding:10px 20px;border:none;border-radius:20px;font-weight:600;">知道了</button>
+    <!-- 聊天消息区域 -->
+    <div id="chat-messages" class="chat-messages"></div>
+
+    <!-- 输入区域 -->
+    <div class="chat-input-area">
+      <button id="plus-btn" class="plus-btn">+</button>
+      <input type="text" id="message-input" placeholder="说点什么..." autocomplete="off">
+      <button id="send-btn" class="send-btn">➤</button>
     </div>
   </div>
 
   <!-- Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- 头部 -->
-  <div class="header">
-    <input type="text" class="ai-name-input" id="aiNameInput" value="DeepSeek" maxlength="15">
-    <div class="settings-btn" onclick="openSettings()">⚙️</div>
-  </div>
+  <!-- 设置弹窗（手动构建，由 js/settings.js 管理） -->
+  <div id="settings-panel" class="modal">
+    <div class="modal-content">
+      <h3>设置</h3>
+      
+      <div class="settings-section">
+        <label>AI 名字</label>
+        <input type="text" id="ai-name-input" value="小金鱼">
+      </div>
 
-  <!-- 聊天区域 -->
-  <div class="chat-container" id="chatBox"></div>
+      <div class="settings-section">
+        <label>AI 人设</label>
+        <textarea id="ai-persona-input" placeholder="描述 AI 的性格..."></textarea>
+      </div>
 
-  <!-- 输入区域 -->
-  <div class="input-area" style="position:relative;">
-    <textarea id="userInput" rows="1" placeholder="输入消息..."></textarea>
-    <button class="send-btn" id="sendButton" onclick="sendMessage()">发送</button>
-    <button class="plus-btn" id="plusButton" onclick="togglePlusMenu()">+</button>
-    <div class="plus-menu" id="plusMenu">
-      <div class="plus-menu-item" onclick="handleImageUpload()">🖼️ 图片理解 (即将上线)</div>
-    </div>
-  </div>
-
-  <!-- 设置弹窗 -->
-  <div class="modal-overlay" id="settingsOverlay">
-    <div class="modal">
-      <h3>⚙️ 设置</h3>
-
-      <div class="form-item">
-        <label>你的头像 (Emoji 或 上传)</label>
-        <div class="avatar-upload-row">
-          <div class="avatar-preview" id="userPreviewAvatar">😊</div>
-          <input type="text" id="userAvatarInput" placeholder="留空显示'你'" maxlength="4" style="flex:1;">
-          <input type="file" id="userAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarUpload('user', this)">
-          <div class="upload-btn" onclick="document.getElementById('userAvatarFile').click()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          </div>
+      <div class="settings-section">
+        <label>头像设置</label>
+        <div class="avatar-upload-area">
+          <span>你的头像：</span>
+          <div id="user-avatar-preview" class="avatar-preview">👤</div>
+          <input type="file" id="user-avatar-upload" accept="image/*" style="display:none">
+          <button onclick="document.getElementById('user-avatar-upload').click()" class="btn-small">上传</button>
+        </div>
+        <div class="avatar-upload-area" style="margin-top:6px">
+          <span>AI 头像：</span>
+          <div id="ai-avatar-preview" class="avatar-preview">🐟</div>
+          <input type="file" id="ai-avatar-upload" accept="image/*" style="display:none">
+          <button onclick="document.getElementById('ai-avatar-upload').click()" class="btn-small">上传</button>
         </div>
       </div>
 
-      <div class="form-item">
-        <label>AI 头像 (Emoji 或 上传)</label>
-        <div class="avatar-upload-row">
-          <div class="avatar-preview" id="aiPreviewAvatar">🤖</div>
-          <input type="text" id="aiAvatarInput" placeholder="留空显示首字母" maxlength="4" style="flex:1;">
-          <input type="file" id="aiAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarUpload('ai', this)">
-          <div class="upload-btn" onclick="document.getElementById('aiAvatarFile').click()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          </div>
-        </div>
+      <div class="settings-section">
+        <label><input type="checkbox" id="enable-search-check"> 🔍 联网搜索</label>
       </div>
 
-      <div class="form-item">
-        <label>AI 人设 (可选)</label>
-        <input type="text" id="personaInput" placeholder="例如：你是一个风趣的助手">
+      <div class="settings-section">
+        <label><input type="checkbox" id="auto-emoji-check"> 😄 自动表情（AI 回复可带贴图）</label>
       </div>
 
-      <div class="switch-row">
-        <label>🔍 联网搜索</label>
-        <label class="switch">
-          <input type="checkbox" id="searchToggle">
-          <span class="slider"></span>
-        </label>
+      <div class="settings-section">
+        <label>主题</label>
+        <select id="theme-select">
+          <option value="auto">跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
       </div>
 
-      <div class="modal-actions">
-        <button class="btn-export" onclick="openExport()">📤 导出</button>
-        <button class="btn-import" onclick="document.getElementById('importFileInput').click()">📥 导入</button>
-        <input type="file" id="importFileInput" accept=".txt" style="display:none;" onchange="importMemory(this)">
-        <button class="btn-danger" onclick="clearMemory()">清空</button>
-        <button class="btn-primary" onclick="saveSettings()">保存</button>
+      <div class="settings-section">
+        <label>聊天背景</label>
+        <select id="bg-select">
+          <option value="none">无背景</option>
+          <option value="gradient1">海洋渐变</option>
+          <option value="gradient2">落日暖阳</option>
+          <option value="custom">自定义上传</option>
+        </select>
+        <div id="bg-preview" style="width:100%;height:40px;border-radius:8px;margin-top:6px;background:var(--bg)"></div>
+        <input type="file" id="bg-upload" accept="image/*" style="display:none">
       </div>
+
+      <div class="settings-section">
+        <label>数据管理</label>
+        <button id="export-memory-btn" class="btn-small">导出记忆</button>
+        <button id="import-memory-btn" class="btn-small">导入记忆</button>
+        <input type="file" id="import-file-input" accept=".txt" style="display:none">
+        <button id="clear-chat-btn" class="btn-small" style="background:#e74c3c;color:white">清空对话</button>
+      </div>
+
+      <button id="settings-save" class="btn-primary" style="width:100%;margin-top:8px">保存设置</button>
+      <button id="settings-close" class="btn-secondary" style="width:100%;margin-top:4px">取消</button>
     </div>
   </div>
 
-  <!-- 导出弹窗 -->
-  <div class="modal-overlay" id="exportOverlay">
-    <div class="modal">
-      <h3>📤 选择导出内容</h3>
-      <div><label><input type="checkbox" id="exportAiName" checked> AI 名字</label></div>
-      <div><label><input type="checkbox" id="exportPersona" checked> 人设</label></div>
-      <div><label><input type="checkbox" id="exportMemory" checked> 长期记忆</label></div>
-      <div class="export-preview" id="exportPreview"></div>
-      <div class="modal-actions">
-        <button class="btn-danger" onclick="closeExport()">取消</button>
-        <button class="btn-primary" onclick="doExport()">确认导出</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ==================== 全局错误保护 ====================
-    window.addEventListener('error', function(e) {
-      console.error('捕获错误:', e.message);
-    });
-
-    // ==================== 微信检测 ====================
-    (function() {
-      var ua = navigator.userAgent.toLowerCase();
-      if (ua.indexOf('micromessenger') !== -1 || ua.indexOf('wechat') !== -1) {
-        document.getElementById('wechatGuide').classList.add('active');
-        document.getElementById('sendButton').disabled = true;
-      }
-    })();
-
-    function dismissGuide() {
-      document.getElementById('wechatGuide').classList.remove('active');
-      showToast('微信内功能受限，建议在浏览器中打开');
-    }
-
-    // ==================== Toast ====================
-    var toast = document.getElementById('toast');
-    var toastTimer = null;
-    function showToast(msg, dur) {
-      dur = dur || 2500;
-      if (toastTimer) clearTimeout(toastTimer);
-      toast.textContent = msg;
-      toast.classList.add('show');
-      toastTimer = setTimeout(function() {
-        toast.classList.remove('show');
-        toastTimer = null;
-      }, dur);
-    }
-
-    // ==================== DOM 元素 ====================
-    var chatBox = document.getElementById('chatBox');
-    var userInput = document.getElementById('userInput');
-    var sendBtn = document.getElementById('sendButton');
-    var plusBtn = document.getElementById('plusButton');
-    var plusMenu = document.getElementById('plusMenu');
-    var aiNameInput = document.getElementById('aiNameInput');
-    var settingsOverlay = document.getElementById('settingsOverlay');
-    var personaInput = document.getElementById('personaInput');
-    var searchToggle = document.getElementById('searchToggle');
-    var userAvatarInput = document.getElementById('userAvatarInput');
-    var aiAvatarInput = document.getElementById('aiAvatarInput');
-    var userPreviewAvatar = document.getElementById('userPreviewAvatar');
-    var aiPreviewAvatar = document.getElementById('aiPreviewAvatar');
-    var importFileInput = document.getElementById('importFileInput');
-    var exportOverlay = document.getElementById('exportOverlay');
-
-    // ==================== 用户设置 ====================
-    var STORAGE_KEY = 'deepseek_memory_v1';
-    var SETTINGS_KEY = 'deepseek_settings_v1';
-    var MAX_TOKENS = 10000;
-
-    var settings = {
-      aiName: 'DeepSeek',
-      persona: '',
-      enableSearch: false,
-      userAvatar: { emoji: '😊' },
-      aiAvatar: {}
-    };
-
-    // 加载设置
-    try {
-      var savedSettings = localStorage.getItem(SETTINGS_KEY);
-      if (savedSettings) {
-        var parsed = JSON.parse(savedSettings);
-        if (parsed.aiName) settings.aiName = parsed.aiName;
-        if (parsed.persona !== undefined) settings.persona = parsed.persona;
-        if (parsed.enableSearch !== undefined) settings.enableSearch = parsed.enableSearch;
-        if (parsed.userAvatar) settings.userAvatar = parsed.userAvatar;
-        if (parsed.aiAvatar) settings.aiAvatar = parsed.aiAvatar;
-      }
-    } catch(e) {}
-
-    function saveSettings() {
-      // 表单赋值
-      settings.aiName = aiNameInput.value.trim() || 'DeepSeek';
-      settings.persona = personaInput.value.trim();
-      settings.enableSearch = searchToggle.checked;
-      var userEmoji = userAvatarInput.value.trim();
-      settings.userAvatar = userEmoji ? { emoji: userEmoji } : {};
-      var aiEmoji = aiAvatarInput.value.trim();
-      settings.aiAvatar = aiEmoji ? { emoji: aiEmoji } : {};
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-      // 更新状态变量
-      systemPersona = settings.persona;
-      enableSearch = settings.enableSearch;
-      aiName = settings.aiName;
-      closeSettings();
-      refreshAvatarPreviews();
-      renderAllMessages(); // 刷新头像和名字
-      showToast('设置已保存');
-    }
-
-    function applySettingsToUI() {
-      aiNameInput.value = settings.aiName;
-      personaInput.value = settings.persona;
-      searchToggle.checked = settings.enableSearch;
-      userAvatarInput.value = settings.userAvatar && settings.userAvatar.emoji ? settings.userAvatar.emoji : '';
-      aiAvatarInput.value = settings.aiAvatar && settings.aiAvatar.emoji ? settings.aiAvatar.emoji : '';
-      refreshAvatarPreviews();
-    }
-    applySettingsToUI();
-
-    // ==================== 头像相关 ====================
-    function getAvatarDisplay(who) {
-      var avatarData = who === 'user' ? settings.userAvatar : settings.aiAvatar;
-      if (avatarData && avatarData.base64) {
-        return '<img src="' + avatarData.base64 + '" alt="avatar">';
-      }
-      if (avatarData && avatarData.emoji) return avatarData.emoji;
-      if (who === 'user') return '你';
-      return (settings.aiName || 'AI').charAt(0);
-    }
-
-    function refreshAvatarPreviews() {
-      renderPreview('user', userPreviewAvatar);
-      renderPreview('ai', aiPreviewAvatar);
-    }
-
-    function renderPreview(who, el) {
-      var display = getAvatarDisplay(who);
-      if (display.indexOf('<img') === 0) {
-        el.innerHTML = display;
-      } else {
-        el.innerHTML = '';
-        el.textContent = display;
-      }
-    }
-
-    // 头像上传
-    function handleAvatarUpload(who, fileInput) {
-      var file = fileInput.files && fileInput.files[0];
-      if (!file) return;
-      if (file.size > 500 * 1024) {
-        showToast('图片不能超过500KB');
-        return;
-      }
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var img = new Image();
-        img.src = e.target.result;
-        img.onload = function() {
-          var canvas = document.createElement('canvas');
-          var size = 128;
-          canvas.width = size;
-          canvas.height = size;
-          var ctx = canvas.getContext('2d');
-          var minDim = Math.min(img.width, img.height);
-          var sx = (img.width - minDim) / 2;
-          var sy = (img.height - minDim) / 2;
-          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-          var base64 = canvas.toDataURL('image/jpeg', 0.7);
-          if (who === 'user') {
-            settings.userAvatar = { base64: base64 };
-            userAvatarInput.value = '';
-          } else {
-            settings.aiAvatar = { base64: base64 };
-            aiAvatarInput.value = '';
-          }
-          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-          refreshAvatarPreviews();
-          renderAllMessages();
-        };
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // ==================== 对话状态 ====================
-    var systemPersona = settings.persona;
-    var aiName = settings.aiName;
-    var enableSearch = settings.enableSearch;
-
-    // 加载对话记忆
-    var conversationHistory = [];
-    var memoryItems = [];
-    try {
-      var savedConv = localStorage.getItem(STORAGE_KEY);
-      if (savedConv) {
-        var convData = JSON.parse(savedConv);
-        conversationHistory = convData.history || [];
-        memoryItems = convData.memory_items || [];
-      }
-    } catch(e) {}
-
-    function saveConversationData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        history: conversationHistory,
-        memory_items: memoryItems
-      }));
-    }
-
-    // ==================== 记忆压缩 ====================
-    function estimateTokens(text) {
-      var chinese = (text.match(/[\u4e00-\u9fff]/g) || []).length;
-      return Math.ceil(chinese / 1.5 + (text.length - chinese) / 2);
-    }
-    function getTotalTokens() {
-      var total = 0;
-      for (var i = 0; i < conversationHistory.length; i++) {
-        total += estimateTokens(conversationHistory[i].content);
-      }
-      return total;
-    }
-
-    function smartCompressHistory() {
-      if (getTotalTokens() <= MAX_TOKENS) return;
-      // 异步发送压缩请求
-      var messagesCopy = conversationHistory.slice();
-      fetch('/api/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: messagesCopy, existingMemory: memoryItems })
-      }).then(function(res) {
-        if (!res.ok) return;
-        return res.json();
-      }).then(function(data) {
-        if (!data) return;
-        var newItems = data.memory_items || [];
-        var summary = data.summary || '';
-        // 合并记忆（去重）
-        for (var i = 0; i < newItems.length; i++) {
-          if (memoryItems.indexOf(newItems[i]) === -1) {
-            memoryItems.push(newItems[i]);
-          }
-        }
-        // 保留最近50条消息
-        var recent = conversationHistory.slice(-50);
-        var newHistory = [];
-        if (systemPersona) newHistory.push({ role: 'system', content: systemPersona });
-        if (memoryItems.length > 0) newHistory.push({ role: 'system', content: '[长期记忆]\n' + memoryItems.join('\n') });
-        if (summary) newHistory.push({ role: 'system', content: '[对话摘要]\n' + summary });
-        for (var j = 0; j < recent.length; j++) {
-          newHistory.push(recent[j]);
-        }
-        conversationHistory = newHistory;
-        saveConversationData();
-        showToast('🧠 记忆已自动整合');
-      }).catch(function(e) {
-        console.error('记忆压缩失败', e);
-      });
-    }
-
-    // ==================== 消息发送 ====================
-    function sendMessage() {
-      var text = userInput.value.trim();
-      if (!text) return;
-      closePlusMenu();
-      smartCompressHistory();
-
-      conversationHistory.push({ role: 'user', content: text });
-      saveConversationData();
-      addMessage('user', text);
-      userInput.value = '';
-      userInput.style.height = 'auto';
-      sendBtn.disabled = true;
-
-      // 打字动画
-      var typingRow = createTypingIndicator();
-      chatBox.appendChild(typingRow);
-      chatBox.scrollTop = chatBox.scrollHeight;
-
-      // 构建 API 消息
-      var apiMessages = [];
-      if (systemPersona) apiMessages.push({ role: 'system', content: systemPersona });
-      if (memoryItems.length > 0) apiMessages.push({ role: 'system', content: '[长期记忆]\n' + memoryItems.join('\n') });
-      for (var i = 0; i < conversationHistory.length; i++) {
-        apiMessages.push(conversationHistory[i]);
-      }
-
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages, enable_search: enableSearch })
-      }).then(function(res) {
-        if (typingRow && typingRow.parentNode) typingRow.parentNode.removeChild(typingRow);
-        if (!res.ok) {
-          addMessage('assistant', '请求失败 (' + res.status + ')，请稍后重试');
-          sendBtn.disabled = false;
-          return;
-        }
-        return res.json();
-      }).then(function(data) {
-        if (!data) return;
-        if (data.reply) {
-          addMessage('assistant', data.reply);
-          conversationHistory.push({ role: 'assistant', content: data.reply });
-          saveConversationData();
-        } else {
-          addMessage('assistant', '出错啦：' + (data.error || '服务器返回了空内容'));
-        }
-        sendBtn.disabled = false;
-      }).catch(function(err) {
-        if (typingRow && typingRow.parentNode) typingRow.parentNode.removeChild(typingRow);
-        addMessage('assistant', '网络请求失败，请重试');
-        sendBtn.disabled = false;
-      });
-    }
-
-    // ==================== 渲染函数 ====================
-    function createTypingIndicator() {
-      var row = document.createElement('div');
-      row.className = 'typing-row';
-      var avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      avatar.innerHTML = getAvatarDisplay('ai');
-      var bubble = document.createElement('div');
-      bubble.className = 'typing-bubble';
-      bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      return row;
-    }
-
-    function addMessage(role, content) {
-      var row = document.createElement('div');
-      row.className = 'message-row ' + role;
-      // 头像
-      var avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      avatar.innerHTML = getAvatarDisplay(role === 'user' ? 'user' : 'ai');
-      // 气泡
-      var bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      if (role === 'assistant') {
-        try {
-          bubble.innerHTML = marked.parse(content);
-        } catch(e) {
-          bubble.textContent = content;
-        }
-        // 包装表格
-        var tables = bubble.querySelectorAll('table');
-        for (var i = 0; i < tables.length; i++) {
-          var table = tables[i];
-          if (table.parentNode.classList.contains('table-wrapper')) continue;
-          var wrapper = document.createElement('div');
-          wrapper.className = 'table-wrapper';
-          table.parentNode.insertBefore(wrapper, table);
-          wrapper.appendChild(table);
-        }
-      } else {
-        bubble.textContent = content;
-      }
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      // 附加简单动画类（如果animate.css可用）
-      row.classList.add('animate__animated');
-      row.classList.add(role === 'user' ? 'animate__fadeInRight' : 'animate__fadeInLeft');
-      row.style.setProperty('--animate-duration', '0.3s');
-      chatBox.appendChild(row);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function renderAllMessages() {
-      chatBox.innerHTML = '';
-      for (var i = 0; i < conversationHistory.length; i++) {
-        var msg = conversationHistory[i];
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          addMessage(msg.role, msg.content);
-        }
-      }
-    }
-    renderAllMessages();
-
-    // ==================== 事件绑定 ====================
-    aiNameInput.addEventListener('input', function() {
-      settings.aiName = this.value;
-      aiName = this.value;
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-      refreshAvatarPreviews();
-      renderAllMessages();
-    });
-
-    userInput.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
-    });
-    userInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    function togglePlusMenu() {
-      plusMenu.classList.toggle('open');
-    }
-    function closePlusMenu() {
-      plusMenu.classList.remove('open');
-    }
-    document.addEventListener('click', function(e) {
-      if (!plusBtn.contains(e.target) && !plusMenu.contains(e.target)) {
-        closePlusMenu();
-      }
-    });
-    function handleImageUpload() {
-      closePlusMenu();
-      showToast('🖼️ 图片理解功能即将上线');
-    }
-
-    function openSettings() {
-      settingsOverlay.classList.add('open');
-    }
-    function closeSettings() {
-      settingsOverlay.classList.remove('open');
-    }
-    settingsOverlay.addEventListener('click', function(e) {
-      if (e.target === settingsOverlay) closeSettings();
-    });
-
-    function clearMemory() {
-      if (confirm('确定要清空所有记忆吗？此操作不可恢复。')) {
-        conversationHistory = [];
-        memoryItems = [];
-        saveConversationData();
-        chatBox.innerHTML = '';
-        addMessage('assistant', '所有记忆已清空。');
-        closeSettings();
-      }
-    }
-
-    // ==================== 导出 ====================
-    function openExport() {
-      updateExportPreview();
-      exportOverlay.classList.add('open');
-    }
-    function closeExport() {
-      exportOverlay.classList.remove('open');
-    }
-    function updateExportPreview() {
-      var incName = document.getElementById('exportAiName').checked;
-      var incPersona = document.getElementById('exportPersona').checked;
-      var incMemory = document.getElementById('exportMemory').checked;
-      var text = '';
-      if (incName) text += '=== AI 名字 ===\n' + settings.aiName + '\n\n';
-      if (incPersona) text += '=== 人设 ===\n' + (settings.persona || '(无)') + '\n\n';
-      if (incMemory) {
-        text += '=== 长期记忆 ===\n';
-        text += memoryItems.length ? memoryItems.map(function(i) { return '- ' + i; }).join('\n') : '(无)';
-      }
-      document.getElementById('exportPreview').textContent = text.trim() || '(未选择任何内容)';
-    }
-    function doExport() {
-      var text = document.getElementById('exportPreview').textContent;
-      if (!text || text === '(未选择任何内容)') {
-        showToast('请至少勾选一项');
-        return;
-      }
-      var blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = '记忆备份_' + new Date().toISOString().slice(0,10) + '.txt';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      closeExport();
-      showToast('📤 已导出');
-    }
-
-    // ==================== 导入 ====================
-    function importMemory(fileInput) {
-      var file = fileInput.files[0];
-      if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var content = e.target.result;
-        try {
-          var parsed = parseMemoryContent(content);
-          if (confirm('即将导入：\nAI名字：' + parsed.aiName + '\n人设：' + (parsed.persona || '无') + '\n长期记忆：' + parsed.memoryItems.length + '条\n\n（对话历史将被清空）')) {
-            settings.aiName = parsed.aiName;
-            aiName = parsed.aiName;
-            settings.persona = parsed.persona;
-            systemPersona = parsed.persona;
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-            memoryItems = parsed.memoryItems;
-            conversationHistory = [];
-            saveConversationData();
-            applySettingsToUI();
-            chatBox.innerHTML = '';
-            addMessage('assistant', '📥 记忆已导入，长期记忆已恢复。');
-            showToast('导入成功');
-            closeSettings();
-          }
-        } catch(err) {
-          showToast('导入失败：' + err.message);
-        }
-      };
-      reader.onerror = function() {
-        showToast('文件读取失败');
-      };
-      reader.readAsText(file, 'UTF-8');
-      fileInput.value = '';
-    }
-
-    function parseMemoryContent(text) {
-      var lines = text.split('\n');
-      var result = { aiName: 'DeepSeek', persona: '', memoryItems: [] };
-      var section = '';
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        if (line === '=== AI 名字 ===') { section = 'ainame'; continue; }
-        if (line === '=== 人设 ===') { section = 'persona'; continue; }
-        if (line === '=== 长期记忆 ===') { section = 'memory'; continue; }
-        if (!line) continue;
-        if (section === 'ainame') result.aiName = line;
-        else if (section === 'persona') result.persona = line === '(无)' ? '' : line;
-        else if (section === 'memory') {
-          if (line === '(无)') continue;
-          result.memoryItems.push(line.indexOf('- ') === 0 ? line.substring(2) : line);
-        }
-      }
-      return result;
-    }
-
-    // 确保关闭弹窗的快捷方式（点击遮罩）
-    exportOverlay.addEventListener('click', function(e) {
-      if (e.target === exportOverlay) closeExport();
-    });
-  </script>
+  <!-- 脚本加载（顺序重要） -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/memory.js"></script>
+  <script src="js/vision.js"></script>
+  <script src="js/emoji-auto.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
