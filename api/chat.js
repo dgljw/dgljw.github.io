@@ -1,93 +1,141 @@
-// api/chat.js
-export const maxDuration = 60;
+/**
+ * 聊天核心逻辑
+ * 处理消息发送、API 调用、流式/非流式、上下文构建、记忆压缩触发
+ */
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: '只支持 POST 请求' });
-  }
+const Chat = {
+  /**
+   * 当前是否正在等待 AI 回复
+   */
+  isBusy: false,
 
-  const { messages, enable_search } = req.body;
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: '请提供 messages 数组' });
-  }
+  /**
+   * 发送用户消息的主入口
+   * @param {string} text - 用户输入的文本
+   * @param {string} [type='text'] - 消息类型 'text' | 'image'
+   */
+  async sendMessage(text, type = 'text') {
+    if (this.isBusy) {
+      showToast('请等待当前回复完成');
+      return;
+    }
+    if (!text.trim() && type === 'text') return;
 
-  let cleanedMessages = messages.map(msg => {
-    const { reasoning_content, ...rest } = msg;
-    return rest;
-  });
+    this.isBusy = true;
+    const settings = Storage.getSettings();
 
-  try {
-    if (enable_search) {
-      const lastUserMsg = cleanedMessages.filter(m => m.role === 'user').pop();
-      if (lastUserMsg) {
-        const searchQuery = lastUserMsg.content.trim();
-        console.log('🔍 开始联网搜索:', searchQuery);
-        const searchResults = await performWebSearch(searchQuery);
-        console.log('📡 搜索完成，结果长度:', searchResults?.length || 0);
-        if (searchResults) {
-          cleanedMessages.splice(cleanedMessages.length - 1, 0, {
-            role: 'system',
-            content: `[最新网络搜索结果]\n${searchResults}\n\n请根据以上最新信息回答用户的问题。如果信息不足以回答，请如实告知。`
-          });
-        } else {
-          console.warn('⚠️ 搜索无结果，将直接回答');
-        }
+    // 添加用户消息到界面
+    const userMsg = { role: 'user', content: text, type };
+    renderUserMessage(userMsg);
+    MemoryManager.addMessage(userMsg);
+
+    // 显示打字指示器
+    showTypingIndicator();
+
+    // 检查是否需要压缩记忆（异步后台）
+    if (MemoryManager.shouldCompress()) {
+      MemoryManager.compressMemory(); // 不等待
+    }
+
+    try {
+      // 构建上下文
+      const messages = MemoryManager.buildContext();
+
+      // 调用后端 API
+      const response = await fetch(CONFIG.API_CHAT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          enableSearch: settings.enableSearch
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API 返回错误: ${response.status}`);
       }
+
+      const data = await response.json();
+      const replyContent = data.choices?.[0]?.message?.content || '（AI 未返回内容）';
+
+      // 添加 AI 消息到历史
+      const aiMsg = { role: 'assistant', content: replyContent };
+      MemoryManager.addMessage(aiMsg);
+
+      // 渲染 AI 回复（可能包含贴图标签）
+      hideTypingIndicator();
+      await renderAIMessage(aiMsg);
+
+    } catch (error) {
+      hideTypingIndicator();
+      console.error('发送失败:', error);
+      showToast('发送失败，请检查网络或稍后重试');
+      // 失败时移除用户消息？
+    } finally {
+      this.isBusy = false;
+      // 滚动到底部
+      scrollToBottom();
+    }
+  },
+
+  /**
+   * 发送图片理解消息
+   * @param {string} imageDescription - 图片识别结果文本
+   */
+  async sendImageMessage(imageDescription) {
+    if (this.isBusy) {
+      showToast('请等待当前回复完成');
+      return;
     }
 
-    console.log('🚀 准备调用 DeepSeek API, 消息数:', cleanedMessages.length);
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-v4-flash',
-        messages: cleanedMessages,
-        max_tokens: 1024,
-        stream: false
-      })
-    });
+    this.isBusy = true;
+    const settings = Storage.getSettings();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ DeepSeek API 错误:', response.status, errorText);
-      return res.status(response.status).json({ error: '模型请求失败', detail: errorText });
+    // 构建一条特殊的用户消息
+    const text = `[用户上传了一张图片，识别结果：${imageDescription}]`;
+    const userMsg = { role: 'user', content: text, type: 'image' };
+    renderUserMessage({ ...userMsg, content: '📷 图片理解：' + imageDescription.substring(0, 50) + '...' });
+    MemoryManager.addMessage(userMsg);
+
+    showTypingIndicator();
+
+    if (MemoryManager.shouldCompress()) {
+      MemoryManager.compressMemory();
     }
 
-    const data = await response.json();
-    const message = data.choices?.[0]?.message;
-    if (message) {
-      return res.status(200).json({ reply: message.content });
-    } else {
-      console.error('❌ AI 返回格式异常:', JSON.stringify(data));
-      return res.status(500).json({ error: 'AI 返回内容为空' });
+    try {
+      const messages = MemoryManager.buildContext();
+      const response = await fetch(CONFIG.API_CHAT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          enableSearch: settings.enableSearch
+        })
+      });
+
+      const data = await response.json();
+      const replyContent = data.choices?.[0]?.message?.content || '（未识别到内容）';
+      const aiMsg = { role: 'assistant', content: replyContent };
+      MemoryManager.addMessage(aiMsg);
+
+      hideTypingIndicator();
+      await renderAIMessage(aiMsg);
+    } catch (error) {
+      hideTypingIndicator();
+      showToast('图片处理失败');
+    } finally {
+      this.isBusy = false;
+      scrollToBottom();
     }
-  } catch (error) {
-    console.error('💥 Serverless 函数崩溃:', error);
-    return res.status(500).json({ error: '服务器内部错误', detail: error.message });
+  },
+
+  /**
+   * 清空当前对话并重置状态
+   */
+  clearChat() {
+    MemoryManager.clearAll();
+    renderAllMessages();
+    showToast('对话已清空');
   }
-}
-
-// 使用 Bing 搜索（免费、稳定、无需 API Key）
-async function performWebSearch(query) {
-  try {
-    console.log('🔎 正在请求 Bing 搜索...');
-    const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&format=rss`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DeepSeekBot/1.0)' }
-    });
-    if (!res.ok) {
-      console.error('❌ Bing 搜索请求失败:', res.status);
-      return null;
-    }
-    const text = await res.text();
-    // 提取 RSS 摘要里的描述内容
-    const snippets = text.match(/<description>(.*?)<\/description>/g) || [];
-    const results = snippets.slice(0, 5).map(s => s.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-    return results.length ? results.join('\n\n') : null;
-  } catch (e) {
-    console.error('❌ 搜索失败:', e);
-    return null;
-  }
-}
+};
