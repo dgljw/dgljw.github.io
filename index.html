@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>DeepSeek 记忆管家</title>
-  <!-- 引入独立CSS文件 -->
   <link rel="stylesheet" href="style.css">
-  <!-- Animate.css 动画库 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-  <!-- Markdown 渲染库 -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
@@ -119,6 +116,11 @@
   </div>
 
   <script>
+    // 全局错误捕获，避免一个报错搞瘫所有功能
+    window.addEventListener('error', function(e) {
+      console.error('全局错误:', e.error);
+    });
+
     // ==================== 微信检测 ====================
     (function() {
       const ua = navigator.userAgent.toLowerCase();
