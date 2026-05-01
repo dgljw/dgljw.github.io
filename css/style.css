@@ -62,7 +62,7 @@ body {
   overflow: visible;
 }
 
-/* ---------- 应用容器 ---------- */
+/* ---------- 应用容器（背景移除此处，由 JS 动态应用） ---------- */
 .app-container {
   width: 100%;
   max-width: 768px;
@@ -70,7 +70,7 @@ body {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  /* background 不再固定，由 applyBackground() 控制 */
   position: relative;
 }
 
