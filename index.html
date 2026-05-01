@@ -15,6 +15,32 @@
       background: radial-gradient(circle at 20% 20%, #f9fafb, #f0f2f5);
       height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
     }
+
+    /* 顶部弹窗 */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateX(-50%) translateY(-10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     .header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; position: relative; }
     .editable-title { font-size: 1.6rem; font-weight: 700; color: #1d1d1f; background: transparent; border: none; text-align: center; outline: none; border-bottom: 2px dashed transparent; transition: border-color 0.2s; padding: 0 4px; max-width: 250px; }
     .editable-title:hover, .editable-title:focus { border-bottom-color: #007aff; }
@@ -130,6 +156,8 @@
   </style>
 </head>
 <body>
+  <div id="toast" class="toast"></div>
+
   <div class="header">
     <input type="text" class="editable-title" id="aiNameInput" value="DeepSeek" placeholder="AI名字" maxlength="15">
     <div class="settings-icon-btn" onclick="openSettings()">⚙️</div>
@@ -213,6 +241,19 @@
     const userPreviewAvatar = document.getElementById('userPreviewAvatar');
     const aiPreviewAvatar = document.getElementById('aiPreviewAvatar');
     const importFileInput = document.getElementById('importFileInput');
+    const toast = document.getElementById('toast');
+
+    // ==================== 全局 toast 提示 ====================
+    let toastTimer = null;
+    function showToast(message, duration = 2500) {
+      if (toastTimer) clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+        toastTimer = null;
+      }, duration);
+    }
 
     // ==================== 配置 ====================
     const STORAGE_KEY = 'deepseek_chat_memory_v5';
@@ -249,12 +290,8 @@
     function renderAvatarPreview(who) {
       const previewEl = who === 'user' ? userPreviewAvatar : aiPreviewAvatar;
       const display = getAvatarDisplay(who);
-      if (display.startsWith('<img')) {
-        previewEl.innerHTML = display;
-      } else {
-        previewEl.innerHTML = '';
-        previewEl.textContent = display;
-      }
+      if (display.startsWith('<img')) { previewEl.innerHTML = display; }
+      else { previewEl.innerHTML = ''; previewEl.textContent = display; }
     }
 
     function handleAvatarUpload(who, fileInput) {
@@ -300,7 +337,7 @@
     function togglePlusMenu() { plusMenu.classList.toggle('open'); }
     function closePlusMenu() { plusMenu.classList.remove('open'); }
     document.addEventListener('click', function(e) { if (!plusBtn.contains(e.target) && !plusMenu.contains(e.target)) closePlusMenu(); });
-    function handleImageUpload() { closePlusMenu(); alert('🖼️ 图片理解功能即将上线，敬请期待！'); }
+    function handleImageUpload() { closePlusMenu(); showToast('🖼️ 图片理解功能即将上线'); }
 
     function openSettings() { settingsOverlay.classList.add('open'); }
     function closeSettings() { settingsOverlay.classList.remove('open'); }
@@ -332,17 +369,23 @@
       }
     }
 
-    // ==================== 导出记忆 ====================
+    // ==================== 导出记忆（不含对话历史） ====================
     function exportMemory() {
-      let text = `=== AI 名字 ===\n${settings.aiName}\n\n=== 人设 ===\n${settings.persona || '(无)'}\n\n=== 长期记忆 ===\n${memoryItems.length > 0 ? memoryItems.join('\n- ') : '(无)'}\n\n=== 对话历史 ===\n`;
-      conversationHistory.forEach(msg => { text += `[${msg.role}] ${msg.content}\n`; });
+      let text = `=== AI 名字 ===\n${settings.aiName}\n\n=== 人设 ===\n${settings.persona || '(无)'}\n\n=== 长期记忆 ===\n`;
+      if (memoryItems.length > 0) {
+        text += memoryItems.map(item => `- ${item}`).join('\n');
+      } else {
+        text += '(无)';
+      }
+      // 不再导出对话历史
       const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url;
       a.download = `记忆备份_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'')}.txt`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      showToast('📤 记忆已导出（不含对话记录）');
     }
 
-    // ==================== 导入记忆 ====================
+    // ==================== 导入记忆（只恢复设置和长期记忆） ====================
     function importMemory(fileInput) {
       const file = fileInput.files[0]; if (!file) return;
       const reader = new FileReader();
@@ -350,17 +393,18 @@
         const content = e.target.result;
         try {
           const parsed = parseMemoryTxt(content);
-          if (confirm(`即将导入：\nAI名字：${parsed.aiName}\n人设：${parsed.persona || '无'}\n长期记忆：${parsed.memoryItems.length}条\n对话历史：${parsed.history.length}条\n\n确定覆盖当前记忆吗？`)) {
+          if (confirm(`即将导入：\nAI名字：${parsed.aiName}\n人设：${parsed.persona || '无'}\n长期记忆：${parsed.memoryItems.length}条\n\n（对话历史不会被导入，将重新开始）`)) {
             settings.aiName = parsed.aiName; aiName = parsed.aiName;
             settings.persona = parsed.persona; systemPersona = parsed.persona;
             saveSettingsToStorage();
             memoryItems = parsed.memoryItems;
-            conversationHistory = parsed.history;
+            // 对话历史清空，重新开始
+            conversationHistory = [];
             saveConversationData();
             applySettingsToUI();
-            renderAllMessages();
-            closeSettings();
-            alert('记忆导入成功！');
+            chatBox.innerHTML = '';
+            addMessage('assistant', '📥 记忆已导入，长期记忆已恢复。');
+            showToast('记忆导入成功');
           }
         } catch (error) {
           alert('导入失败：' + error.message);
@@ -372,14 +416,13 @@
 
     function parseMemoryTxt(text) {
       const lines = text.split('\n');
-      const result = { aiName: 'DeepSeek', persona: '', memoryItems: [], history: [] };
+      const result = { aiName: 'DeepSeek', persona: '', memoryItems: [] };
       let section = '';
       for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed === '=== AI 名字 ===') { section = 'ainame'; continue; }
         if (trimmed === '=== 人设 ===') { section = 'persona'; continue; }
         if (trimmed === '=== 长期记忆 ===') { section = 'memory'; continue; }
-        if (trimmed === '=== 对话历史 ===') { section = 'history'; continue; }
         if (!trimmed) continue;
         switch (section) {
           case 'ainame': result.aiName = trimmed; break;
@@ -388,13 +431,8 @@
             if (trimmed === '(无)') break;
             result.memoryItems.push(trimmed.startsWith('- ') ? trimmed.substring(2).trim() : trimmed);
             break;
-          case 'history':
-            const match = trimmed.match(/^\[(user|assistant)\]\s*(.*)/);
-            if (match) result.history.push({ role: match[1], content: match[2] });
-            break;
         }
       }
-      if (result.history.length === 0 && section !== 'history') throw new Error('未找到有效的对话历史');
       return result;
     }
 
@@ -410,19 +448,25 @@
           const res = await fetch('/api/summarize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [...conversationHistory], existingMemory: memoryItems }) });
           if (!res.ok) return;
           const data = await res.json();
-          memoryItems = [...new Set([...memoryItems, ...(data.memory_items || [])])]; const summary = data.summary || '';
-          const recent = conversationHistory.slice(-50); const newHistory = [];
+          const newMemoryItems = data.memory_items || [];
+          const summary = data.summary || '';
+          // 长期记忆只追加不覆盖
+          memoryItems = [...new Set([...memoryItems, ...newMemoryItems])];
+          const recent = conversationHistory.slice(-50);
+          const newHistory = [];
           if (systemPersona) newHistory.push({ role: 'system', content: systemPersona });
           if (memoryItems.length) newHistory.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
           if (summary) newHistory.push({ role: 'system', content: `[对话摘要]\n${summary}` });
-          newHistory.push(...recent); conversationHistory = newHistory;
-          saveConversationData(); displayBackgroundMessage('🧠 记忆已自动整合。');
+          newHistory.push(...recent);
+          conversationHistory = newHistory;
+          saveConversationData();
+          // ★ 顶部弹窗
+          showToast('🧠 记忆已自动整合');
         } catch (err) {}
       };
       backgroundTask();
     }
     function getTotalTokens() { return conversationHistory.reduce((acc, m) => acc + estimateTokens(m.content), 0); }
-    function displayBackgroundMessage(text) { const row = createMessageRow('assistant', text); row.querySelector('.msg').style.opacity = '0.8'; chatBox.appendChild(row); chatBox.scrollTop = chatBox.scrollHeight; }
 
     async function sendMessage() {
       const text = userInput.value.trim(); if (!text) return;
