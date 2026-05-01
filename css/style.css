@@ -730,3 +730,48 @@ button {
     border-radius: 18px 18px 0 0;
   }
 }
+
+
+/* ---------- 通知卡片 ---------- */
+.notice-content {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.notice-card {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+}
+
+.notice-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.notice-image-card {
+  padding: 6px;
+  overflow: hidden;
+}
+
+.notice-image-card img {
+  display: block;
+}
+
+.notice-footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  opacity: 0.6;
+}
+
+/* ---------- 主动记忆弹窗 ---------- */
+#manual-memory-input {
+  font-family: inherit;
+  resize: vertical;
+}
