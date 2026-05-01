@@ -167,7 +167,6 @@
       aiAvatar: {}
     };
 
-    // 加载设置
     try {
       const saved = localStorage.getItem(SETTINGS_KEY);
       if (saved) settings = JSON.parse(saved);
@@ -209,9 +208,9 @@
       }
     }
 
-    // 头像上传
+    // 头像上传（已修复，确保 this 传递正确）
     function handleAvatarUpload(who, fileInput) {
-      const file = fileInput.files[0];
+      const file = fileInput.files && fileInput.files[0];
       if (!file) return;
       if (file.size > 500 * 1024) {
         alert('图片不能超过500KB');
@@ -224,8 +223,7 @@
         img.onload = function() {
           const canvas = document.createElement('canvas');
           const size = 128;
-          canvas.width = size;
-          canvas.height = size;
+          canvas.width = size; canvas.height = size;
           const ctx = canvas.getContext('2d');
           const minDim = Math.min(img.width, img.height);
           const sx = (img.width - minDim) / 2;
@@ -288,18 +286,13 @@
       }
     });
 
-    // 加号菜单
     function togglePlusMenu() { plusMenu.classList.toggle('open'); }
     function closePlusMenu() { plusMenu.classList.remove('open'); }
     document.addEventListener('click', function(e) {
       if (!plusBtn.contains(e.target) && !plusMenu.contains(e.target)) closePlusMenu();
     });
-    function handleImageUpload() {
-      closePlusMenu();
-      showToast('🖼️ 图片理解功能即将上线');
-    }
+    function handleImageUpload() { closePlusMenu(); showToast('🖼️ 图片理解功能即将上线'); }
 
-    // 设置面板
     function openSettings() { settingsOverlay.classList.add('open'); }
     function closeSettings() { settingsOverlay.classList.remove('open'); }
     settingsOverlay.addEventListener('click', function(e) {
@@ -333,13 +326,8 @@
     }
 
     // ---------- 导出 ----------
-    function openExport() {
-      updateExportPreview();
-      exportOverlay.classList.add('open');
-    }
-    function closeExport() {
-      exportOverlay.classList.remove('open');
-    }
+    function openExport() { updateExportPreview(); exportOverlay.classList.add('open'); }
+    function closeExport() { exportOverlay.classList.remove('open'); }
     function updateExportPreview() {
       const incName = document.getElementById('exportAiName').checked;
       const incPersona = document.getElementById('exportPersona').checked;
@@ -355,10 +343,7 @@
     }
     function doExport() {
       const text = document.getElementById('exportPreview').textContent;
-      if (!text || text === '(未选择任何内容)') {
-        showToast('请至少勾选一项');
-        return;
-      }
+      if (!text || text === '(未选择任何内容)') { showToast('请至少勾选一项'); return; }
       const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -396,13 +381,9 @@
             showToast('导入成功');
             closeSettings();
           }
-        } catch(e) {
-          showToast('导入失败：' + e.message);
-        }
+        } catch(e) { showToast('导入失败：' + e.message); }
       };
-      reader.onerror = function() {
-        showToast('文件读取失败');
-      };
+      reader.onerror = function() { showToast('文件读取失败'); };
       reader.readAsText(file, 'UTF-8');
       fileInput.value = '';
     }
@@ -434,20 +415,14 @@
       const chinese = (text.match(/[\u4e00-\u9fff]/g) || []).length;
       return Math.ceil(chinese / 1.5 + (text.length - chinese) / 2);
     }
-    function getTotalTokens() {
-      return conversationHistory.reduce((acc, m) => acc + estimateTokens(m.content), 0);
-    }
+    function getTotalTokens() { return conversationHistory.reduce((acc, m) => acc + estimateTokens(m.content), 0); }
     async function smartCompressHistory() {
       if (getTotalTokens() <= MAX_TOKENS) return;
       const backgroundTask = async () => {
         try {
           const res = await fetch('/api/summarize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: [...conversationHistory],
-              existingMemory: memoryItems
-            })
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: [...conversationHistory], existingMemory: memoryItems })
           });
           if (!res.ok) return;
           const data = await res.json();
@@ -494,12 +469,8 @@
 
       try {
         const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: apiMessages,
-            enable_search: enableSearch
-          })
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: apiMessages, enable_search: enableSearch })
         });
         loadingRow.remove();
         if (!res.ok) {
@@ -555,7 +526,6 @@
         } catch(e) {
           bubble.textContent = content;
         }
-        // 包裹表格
         bubble.querySelectorAll('table').forEach(table => {
           if (table.parentNode.classList.contains('table-wrapper')) return;
           const wrapper = document.createElement('div');
@@ -583,13 +553,10 @@
     function renderAllMessages() {
       chatBox.innerHTML = '';
       conversationHistory.forEach(msg => {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          addMessage(msg.role, msg.content);
-        }
+        if (msg.role === 'user' || msg.role === 'assistant') addMessage(msg.role, msg.content);
       });
     }
 
-    // 初始渲染
     renderAllMessages();
   </script>
 </body>
