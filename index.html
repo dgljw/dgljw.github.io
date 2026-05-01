@@ -15,18 +15,34 @@
       background: radial-gradient(circle at 20% 20%, #f9fafb, #f0f2f5);
       height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
     }
-    /* 顶部提示条 */
-    .wechat-hint {
-      background: #fff3cd; color: #856404; padding: 8px 14px; border-radius: 12px;
-      font-size: 0.85rem; margin-bottom: 10px; text-align: center;
+
+    /* 全屏微信引导面板 */
+    .wechat-guide-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      z-index: 999; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; text-align: center; color: white;
       display: none; /* 默认隐藏 */
-      position: relative;
     }
-    .wechat-hint a { color: #007aff; font-weight: 600; text-decoration: none; }
-    .wechat-hint .close-hint {
-      position: absolute; top: 5px; right: 10px; cursor: pointer;
-      font-weight: bold; font-size: 1.2rem; color: #856404; background: none; border: none;
+    .wechat-guide-overlay.active { display: flex; }
+    .guide-card {
+      background: rgba(255,255,255,0.95); color: #1d1d1f;
+      padding: 32px 24px; border-radius: 32px; max-width: 320px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      animation: fadeInUp 0.4s ease;
     }
+    .guide-card h3 { font-size: 1.5rem; margin-bottom: 8px; }
+    .guide-card p { font-size: 0.95rem; color: #555; margin-bottom: 20px; }
+    .btn-open-browser {
+      display: inline-block; background: linear-gradient(135deg, #007aff, #0060df);
+      color: white; padding: 14px 32px; border-radius: 30px;
+      font-weight: 600; font-size: 1rem; text-decoration: none;
+      box-shadow: 0 8px 20px rgba(0,122,255,0.3);
+      transition: all 0.2s; cursor: pointer; border: none;
+    }
+    .btn-open-browser:active { transform: scale(0.96); }
+    .guide-hint { font-size: 0.8rem; color: #999; margin-top: 12px; }
+
     .toast {
       position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
       background: rgba(0,0,0,0.85); color: white; padding: 12px 24px;
@@ -140,15 +156,20 @@
     .btn-primary:hover { background: #0066d6; }
 
     @keyframes modalPopIn { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @supports (padding-bottom: env(safe-area-inset-bottom)) { .input-area { padding-bottom: env(safe-area-inset-bottom); } }
     @media (max-width: 400px) { .message-row { max-width: 95%; } .typing-indicator-row { max-width: 95%; } }
   </style>
 </head>
 <body>
-  <!-- 微信环境提示条 -->
-  <div id="wechatHint" class="wechat-hint">
-    ⚠️ 微信内可能无法正常聊天，建议<a href="#" onclick="copyUrl()">点此复制链接</a>在浏览器打开。
-    <button class="close-hint" onclick="this.parentElement.style.display='none'">&times;</button>
+  <!-- 微信环境引导面板 -->
+  <div id="wechatGuideOverlay" class="wechat-guide-overlay">
+    <div class="guide-card">
+      <h3>✨ 更好的体验</h3>
+      <p>您正在微信内访问，部分功能可能受限。建议切换到浏览器以获得完整支持。</p>
+      <button class="btn-open-browser" onclick="switchToBrowser()">在浏览器中打开</button>
+      <div class="guide-hint">点击后将自动尝试打开系统浏览器</div>
+    </div>
   </div>
 
   <div id="toast" class="toast"></div>
@@ -221,32 +242,54 @@
   </div>
 
   <script>
-    // ==================== 微信检测 & 提示 ====================
+    // ==================== 微信检测与引导 ====================
     (function() {
       const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes('micromessenger') || ua.includes('wechat')) {
-        document.getElementById('wechatHint').style.display = 'block';
+      const isWechat = ua.includes('micromessenger') || ua.includes('wechat');
+      if (isWechat) {
+        // 显示引导面板，隐藏聊天相关操作区域（但元素仍在，只是视觉上由面板挡住）
+        const overlay = document.getElementById('wechatGuideOverlay');
+        if (overlay) overlay.classList.add('active');
+        // 禁用发送按钮避免误触
+        const sendBtn = document.getElementById('send-btn');
+        if (sendBtn) sendBtn.disabled = true;
       }
     })();
 
-    function copyUrl() {
+    // 尝试唤起系统浏览器
+    function switchToBrowser() {
       const url = window.location.href;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-          showToast('链接已复制，请在系统浏览器中打开');
-        }).catch(() => {
-          prompt('请手动复制链接:', url);
-        });
-      } else {
-        prompt('请手动复制链接:', url);
+      const ua = navigator.userAgent.toLowerCase();
+      // 安卓微信：使用 intent 直接唤起
+      if (ua.includes('android')) {
+        const intentUrl = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+        window.location.href = intentUrl;
+        // 同时尝试复制链接兜底
+        setTimeout(() => {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url);
+            showToast('链接已复制，请手动在浏览器中打开');
+          }
+        }, 600);
+      }
+      // iOS 微信：无法直接唤起，提供复制方案
+      else {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => {
+            showToast('链接已复制，请在 Safari 中打开');
+          }).catch(() => {
+            prompt('请手动复制链接并在浏览器打开:', url);
+          });
+        } else {
+          prompt('请手动复制链接并在浏览器打开:', url);
+        }
       }
     }
 
     // ==================== 全局错误处理 ====================
     window.addEventListener('error', function(e) {
       console.error('全局错误:', e.error);
-      // 可选：显示一个短暂的提示
-      showToast('页面发生了错误，请刷新重试');
+      showToast('页面发生了小错误，请刷新重试');
     });
 
     // ==================== DOM 元素 ====================
@@ -266,7 +309,7 @@
     const importFileInput = document.getElementById('importFileInput');
     const toast = document.getElementById('toast');
 
-    // ==================== Toast 提示 ====================
+    // ==================== Toast ====================
     let toastTimer = null;
     function showToast(message, duration = 2500) {
       if (toastTimer) clearTimeout(toastTimer);
@@ -278,7 +321,7 @@
       }, duration);
     }
 
-    // ==================== 设置管理 ====================
+    // ==================== 设置 ====================
     const STORAGE_KEY = 'deepseek_chat_memory_v5';
     const SETTINGS_KEY = 'deepseek_settings_v4';
     const MAX_HISTORY_TOKENS = 10000;
@@ -337,7 +380,6 @@
       reader.readAsDataURL(file);
     }
 
-    // 全局状态
     let systemPersona = settings.persona;
     let aiName = settings.aiName;
     let enableSearch = settings.enableSearch;
@@ -380,14 +422,15 @@
 
     function clearMemory() {
       if (confirm('确定要清空所有记忆吗？此操作不可恢复。')) {
-        conversationHistory = []; memoryItems = [];
-        saveConversationData(); chatBox.innerHTML = '';
+        conversationHistory = [];
+        memoryItems = [];
+        saveConversationData();
+        chatBox.innerHTML = '';
         addMessage('assistant', '所有记忆已清空。');
         closeSettings();
       }
     }
 
-    // ==================== 导出（兼容微信） ====================
     function exportMemory() {
       let text = `=== AI 名字 ===\n${settings.aiName}\n\n=== 人设 ===\n${settings.persona || '(无)'}\n\n=== 长期记忆 ===\n`;
       if (memoryItems.length > 0) {
@@ -395,16 +438,11 @@
       } else {
         text += '(无)';
       }
-
       const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      const a = document.createElement('a'); a.href = url;
       a.download = `记忆备份_${new Date().toISOString().slice(0,10)}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(() => {
@@ -416,15 +454,12 @@
           showToast('📤 导出失败，请用系统浏览器打开');
         }
       }, 500);
-
       URL.revokeObjectURL(url);
     }
 
-    // ==================== 导入（修复微信兼容性） ====================
     function importMemory(fileInput) {
       const file = fileInput.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(e) {
         const content = e.target.result;
@@ -432,17 +467,13 @@
           if (!content || content.trim().length === 0) throw new Error('文件为空');
           const parsed = parseMemoryTxt(content);
           if (!parsed || typeof parsed.aiName !== 'string') throw new Error('记忆文件格式不正确');
-
           const confirmMsg = `即将导入：\nAI名字：${parsed.aiName}\n人设：${parsed.persona || '无'}\n长期记忆：${parsed.memoryItems.length}条\n\n（对话历史将被清空）`;
           if (confirm(confirmMsg)) {
             const newAiName = parsed.aiName;
             const newPersona = parsed.persona;
             const newMemoryItems = parsed.memoryItems;
-
-            settings.aiName = newAiName;
-            aiName = newAiName;
-            settings.persona = newPersona;
-            systemPersona = newPersona;
+            settings.aiName = newAiName; aiName = newAiName;
+            settings.persona = newPersona; systemPersona = newPersona;
             saveSettingsToStorage();
             memoryItems = newMemoryItems;
             conversationHistory = [];
@@ -458,9 +489,7 @@
           console.error(error);
         }
       };
-      reader.onerror = function() {
-        showToast('文件读取失败，请重试');
-      };
+      reader.onerror = function() { showToast('文件读取失败，请重试'); };
       reader.readAsText(file, 'UTF-8');
       fileInput.value = '';
     }
@@ -487,7 +516,6 @@
       return result;
     }
 
-    // ==================== 对话存储 ====================
     function saveConversationData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ history: conversationHistory, memory_items: memoryItems })); } catch (e) {} }
     function loadConversationData() { try { const saved = localStorage.getItem(STORAGE_KEY); return saved ? JSON.parse(saved) : { history: [], memory_items: [] }; } catch (e) { return { history: [], memory_items: [] }; } }
 
@@ -517,18 +545,12 @@
     }
     function getTotalTokens() { return conversationHistory.reduce((acc, m) => acc + estimateTokens(m.content), 0); }
 
-    // ==================== 发送消息（带详细反馈） ====================
     async function sendMessage() {
       const text = userInput.value.trim();
       if (!text) return;
-
-      // 先关闭加号菜单（如果开着）
       closePlusMenu();
-
-      // 压缩检测
       smartCompressHistory();
 
-      // 保存用户消息
       conversationHistory.push({ role: 'user', content: text });
       saveConversationData();
       addMessage('user', text);
@@ -536,12 +558,10 @@
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
 
-      // 加载动画
       const loadingRow = createTypingIndicator();
       chatBox.appendChild(loadingRow);
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      // 组装消息
       const apiMessages = [];
       if (systemPersona) apiMessages.push({ role: 'system', content: systemPersona });
       if (memoryItems.length) apiMessages.push({ role: 'system', content: `[长期记忆]\n${memoryItems.join('\n')}` });
@@ -549,19 +569,15 @@
 
       try {
         const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: apiMessages, enable_search: enableSearch })
         });
-
         loadingRow.remove();
-
         if (!res.ok) {
-          addMessage('assistant', `请求失败 (${res.status})：可能网络问题或API错误，请稍后再试。`);
+          addMessage('assistant', `请求失败 (${res.status})：请稍后重试或切换网络。`);
           sendBtn.disabled = false;
           return;
         }
-
         const data = await res.json();
         if (data.reply) {
           addMessage('assistant', data.reply);
@@ -572,14 +588,7 @@
         }
       } catch (err) {
         loadingRow.remove();
-        // 明确提示用户可能的网络问题
-        let errorMsg = '网络请求失败：';
-        if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-          errorMsg += '无法连接到服务器，请检查网络或切换到系统浏览器重试。';
-        } else {
-          errorMsg += err.message;
-        }
-        addMessage('assistant', errorMsg);
+        addMessage('assistant', '网络请求失败，请切换到系统浏览器再试一次。');
       } finally {
         sendBtn.disabled = false;
       }
