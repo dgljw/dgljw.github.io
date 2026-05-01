@@ -114,6 +114,24 @@ const Settings = {
         }
       });
     }
+
+    // 主动记忆：手动输入
+    const manualMemBtn = document.getElementById('manual-memory-btn');
+    if (manualMemBtn) {
+      manualMemBtn.addEventListener('click', () => {
+        this.closePanel();
+        showManualMemoryModal();
+      });
+    }
+
+    // 主动记忆：记忆当前上下文
+    const snapshotMemBtn = document.getElementById('snapshot-memory-btn');
+    if (snapshotMemBtn) {
+      snapshotMemBtn.addEventListener('click', () => {
+        this.closePanel();
+        snapshotCurrentContext();
+      });
+    }
   },
 
   /**

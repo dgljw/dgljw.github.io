@@ -468,3 +468,157 @@ function refreshAvatarPreviews() {
     aiPreview.innerHTML = avatar.startsWith('data:') ? `<img src="${avatar}" width="40">` : avatar;
   }
 }
+
+// ==================== 通知弹窗 ====================
+
+let noticeModal = null;
+
+async function showNoticeModal() {
+  if (!noticeModal) {
+    noticeModal = document.createElement('div');
+    noticeModal.id = 'notice-modal';
+    noticeModal.className = 'modal';
+    noticeModal.innerHTML = `
+      <div class="modal-content notice-content">
+        <h3>📢 通知</h3>
+        <div id="notice-cards"></div>
+        <p class="notice-footer">power by jianguo</p>
+        <button id="notice-close-btn" class="btn-secondary" style="width:100%;margin-top:8px">关闭</button>
+      </div>
+    `;
+    document.body.appendChild(noticeModal);
+
+    document.getElementById('notice-close-btn').addEventListener('click', () => {
+      noticeModal.classList.remove('show');
+      setTimeout(() => noticeModal.style.display = 'none', 300);
+    });
+  }
+
+  // 每次打开时重新拉取 notice.txt 并渲染卡片
+  const cardsContainer = document.getElementById('notice-cards');
+  cardsContainer.innerHTML = '加载中...';
+  noticeModal.style.display = 'flex';
+  setTimeout(() => noticeModal.classList.add('show'), 10);
+
+  const links = await fetchAndParseNotice();
+  renderNoticeCards(links);
+}
+
+async function fetchAndParseNotice() {
+  const defaults = { app: '#', contact: '#', image: '' };
+  try {
+    const response = await fetch(CONFIG.NOTICE_FILE);
+    if (!response.ok) return defaults;
+    const text = await response.text();
+    const result = { ...defaults };
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const m1 = line.match(/^\[1\]\s*(.+)/);
+      if (m1) result.app = m1[1].trim();
+      const m2 = line.match(/^\[2\]\s*(.+)/);
+      if (m2) result.contact = m2[1].trim();
+      const m3 = line.match(/^\[3\]\s*(.+)/);
+      if (m3) result.image = m3[1].trim();
+    }
+    return result;
+  } catch {
+    return defaults;
+  }
+}
+
+function renderNoticeCards(links) {
+  const container = document.getElementById('notice-cards');
+  if (!container) return;
+
+  let imageCard = '';
+  if (links.image) {
+    imageCard = `
+      <div class="notice-card notice-image-card">
+        <img src="${links.image}" alt="通知图片" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover">
+      </div>`;
+  }
+
+  container.innerHTML = `
+    ${imageCard}
+    <div class="notice-card">
+      <div class="notice-card-title">📱 APP 下载</div>
+      <a href="${links.app}" target="_blank" class="btn-small" style="display:inline-block;text-decoration:none">点此下载</a>
+    </div>
+    <div class="notice-card">
+      <div class="notice-card-title">📞 开发者联系方式</div>
+      <a href="${links.contact}" target="_blank" class="btn-small" style="display:inline-block;text-decoration:none">点此跳转</a>
+    </div>
+  `;
+}
+
+// ==================== 主动记忆弹窗 ====================
+
+let manualMemoryModal = null;
+
+function showManualMemoryModal() {
+  if (!manualMemoryModal) {
+    manualMemoryModal = document.createElement('div');
+    manualMemoryModal.id = 'manual-memory-modal';
+    manualMemoryModal.className = 'modal';
+    manualMemoryModal.innerHTML = `
+      <div class="modal-content">
+        <h3>✍️ 手动添加记忆</h3>
+        <textarea id="manual-memory-input" placeholder="输入一条你想让 AI 记住的事实..." style="width:100%;min-height:100px;border-radius:8px;border:1.5px solid var(--border);padding:10px;font-size:14px;background:var(--input-bg);color:var(--text)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="manual-memory-cancel" class="btn-secondary" style="flex:1">取消</button>
+          <button id="manual-memory-save" class="btn-primary" style="flex:1">保存</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(manualMemoryModal);
+
+    document.getElementById('manual-memory-cancel').addEventListener('click', () => {
+      manualMemoryModal.classList.remove('show');
+      setTimeout(() => manualMemoryModal.style.display = 'none', 300);
+    });
+
+    document.getElementById('manual-memory-save').addEventListener('click', () => {
+      const input = document.getElementById('manual-memory-input');
+      const text = input.value.trim();
+      if (!text) { showToast('请输入内容'); return; }
+      const state = MemoryManager.getState();
+      if (!state.memoryItems) state.memoryItems = [];
+      state.memoryItems.push(text);
+      MemoryManager.saveState(state);
+      manualMemoryModal.classList.remove('show');
+      setTimeout(() => manualMemoryModal.style.display = 'none', 300);
+      showToast('✅ 记忆已保存');
+    });
+  }
+
+  document.getElementById('manual-memory-input').value = '';
+  manualMemoryModal.style.display = 'flex';
+  setTimeout(() => manualMemoryModal.classList.add('show'), 10);
+}
+
+function snapshotCurrentContext() {
+  const state = MemoryManager.getState();
+  const recent = state.history.slice(-6); // 最近 3 轮对话
+  if (recent.length === 0) {
+    showToast('当前没有对话可供记忆');
+    return;
+  }
+
+  // 提取最近对话中的关键信息作为新记忆
+  const summary = recent
+    .filter(m => m.role === 'user')
+    .map(m => m.content)
+    .slice(-2)
+    .join('；');
+
+  if (!summary) {
+    showToast('未找到可记忆的内容');
+    return;
+  }
+
+  if (!state.memoryItems) state.memoryItems = [];
+  const newItem = `[用户说过] ${summary}`;
+  state.memoryItems.push(newItem);
+  MemoryManager.saveState(state);
+  showToast('📸 上下文已记忆: ' + summary.substring(0, 30) + '...');
+}

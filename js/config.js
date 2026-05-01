@@ -13,7 +13,7 @@ const CONFIG = {
   API_SUMMARIZE: '/api/summarize',
   API_EMOJI_SEARCH: '/api/emoji-proxy',
   API_VISION: '/api/vision',
-  
+  NOTICE_FILE: '/js/notice.txt',   
   // 请求参数
   MAX_TOKENS: 1024,
   THINKING_DISABLED: true,
