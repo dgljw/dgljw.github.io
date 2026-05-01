@@ -1,0 +1,564 @@
+/* ==========================================
+   DeepSeek 记忆管家（小金鱼）样式表
+   移动端优先，支持深色模式，适应 320px–768px
+   ========================================== */
+
+/* ---------- 变量定义 ---------- */
+:root {
+  --bg: #f5f7fa;
+  --text: #1a1a2e;
+  --bubble-user: #dcf8c6;
+  --bubble-ai: #ffffff;
+  --border: #e0e0e0;
+  --accent: #4a90d9;
+  --accent-hover: #357abd;
+  --header-bg: #ffffff;
+  --input-bg: #ffffff;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --radius: 12px;
+  --transition: 0.3s ease;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --text: #e0e0e0;
+  --bubble-user: #2d4a2d;
+  --bubble-ai: #252540;
+  --border: #3a3a5c;
+  --accent: #4a90d9;
+  --accent-hover: #6ba3e0;
+  --header-bg: #252540;
+  --input-bg: #252540;
+  --shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ---------- 全局重置 ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.3s;
+  overflow: visible; /* 修复输入框被裁切 */
+}
+
+/* ---------- 应用容器 ---------- */
+.app-container {
+  width: 100%;
+  max-width: 768px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  position: relative;
+  box-shadow: var(--shadow);
+}
+
+/* ---------- 头部 ---------- */
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.chat-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background var(--transition);
+}
+
+.header-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* ---------- 聊天区域 ---------- */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- 消息气泡 ---------- */
+.message {
+  display: flex;
+  gap: 8px;
+  max-width: 90%;
+  animation: messageIn 0.3s ease;
+}
+
+@keyframes messageIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.user-message {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.ai-message {
+  align-self: flex-start;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: #eee;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.user-bubble {
+  background: var(--bubble-user);
+  border-bottom-right-radius: 4px;
+}
+
+.ai-bubble {
+  background: var(--bubble-ai);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--shadow);
+}
+
+/* 消息中的图片 */
+.message-bubble img:not(.emoji-inline) {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.emoji-inline {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+/* ---------- 打字指示器 ---------- */
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden; /* 防止圆点溢出 */
+  padding: 10px 14px;
+  min-height: 36px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background: #aaa;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- 输入区域 ---------- */
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--header-bg);
+  border-top: 1px solid var(--border);
+  z-index: 10;
+}
+
+#message-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  transition: border var(--transition);
+}
+
+#message-input:focus {
+  border-color: var(--accent);
+}
+
+.send-btn,
+.plus-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.send-btn:hover,
+.plus-btn:hover {
+  background: var(--accent-hover);
+}
+
+.plus-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 22px;
+}
+
+/* ---------- 加号菜单 ---------- */
+.plus-menu {
+  display: none;
+  position: fixed;
+  background: var(--header-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  z-index: 100;
+  min-width: 140px;
+  padding: 4px 0;
+}
+
+.plus-menu-item {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background var(--transition);
+  border-radius: 0;
+}
+
+.plus-menu-item:hover {
+  background: var(--bg);
+}
+
+/* ---------- 弹窗通用 ---------- */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.modal.show {
+  display: flex;
+  opacity: 1;
+}
+
+.modal-content {
+  background: var(--header-bg);
+  border-radius: 16px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+  animation: modalIn 0.3s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------- 设置面板 ---------- */
+.settings-section {
+  margin-bottom: 16px;
+}
+
+.settings-section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.settings-section input[type="text"],
+.settings-section textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.settings-section textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.settings-section input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+.avatar-upload-area {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.avatar-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  overflow: hidden;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- 导出弹窗 ---------- */
+.export-modal-content label {
+  display: block;
+  padding: 6px 0;
+  font-size: 15px;
+}
+
+.export-preview {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 12px 0;
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.export-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.export-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-secondary {
+  background: #ccc;
+  color: #333;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* ---------- 表情搜索面板 ---------- */
+.emoji-panel-content {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.emoji-search-input-area {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.emoji-search-input-area input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.emoji-results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.emoji-result-item {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: transform 0.2s;
+}
+
+.emoji-result-item:hover {
+  transform: scale(1.05);
+}
+
+.emoji-result-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+/* ---------- Markdown 扩展 ---------- */
+.ai-bubble table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  display: block;
+  overflow-x: auto;
+}
+
+.ai-bubble th,
+.ai-bubble td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.ai-bubble code {
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.ai-bubble pre {
+  overflow-x: auto;
+  background: rgba(0,0,0,0.05);
+  padding: 10px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+/* ---------- 响应式微调 ---------- */
+@media (max-width: 480px) {
+  .message {
+    max-width: 95%;
+  }
+  .message-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+}
