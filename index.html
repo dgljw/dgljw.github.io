@@ -15,31 +15,15 @@
       background: radial-gradient(circle at 20% 20%, #f9fafb, #f0f2f5);
       height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
     }
-
-    /* 顶部弹窗 */
     .toast {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.85);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      z-index: 200;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      transform: translateX(-50%) translateY(-10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      white-space: nowrap;
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.85); color: white; padding: 12px 24px;
+      border-radius: 30px; font-size: 0.95rem; font-weight: 500; z-index: 200;
+      opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateX(-50%) translateY(-10px); white-space: nowrap;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2); pointer-events: none;
     }
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     .header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; position: relative; }
     .editable-title { font-size: 1.6rem; font-weight: 700; color: #1d1d1f; background: transparent; border: none; text-align: center; outline: none; border-bottom: 2px dashed transparent; transition: border-color 0.2s; padding: 0 4px; max-width: 250px; }
@@ -103,7 +87,6 @@
     @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
     @keyframes fadeInUpBounce { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* 设置弹窗 */
     .settings-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; justify-content: center; align-items: center; }
     .settings-overlay.open { display: flex; }
     .settings-modal { background: #fff; border-radius: 32px; padding: 24px; width: 90%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); max-height: 80vh; overflow-y: auto; animation: modalPopIn 0.3s ease; }
@@ -125,13 +108,7 @@
 
     .avatar-upload-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; overflow: visible; }
     .avatar-upload-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
-    .upload-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: #f5f5f7; border: 2px dashed #c7c7cc;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.3s ease; color: #8e8e93;
-      flex-shrink: 0;
-    }
+    .upload-btn { width: 44px; height: 44px; border-radius: 50%; background: #f5f5f7; border: 2px dashed #c7c7cc; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; color: #8e8e93; flex-shrink: 0; }
     .upload-btn:hover { background: #e9e9ef; border-color: #007aff; color: #007aff; transform: rotate(15deg) scale(1.05); }
 
     .avatar-preview { width: 56px; height: 56px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; flex-shrink: 0; transition: transform 0.3s; }
@@ -243,7 +220,7 @@
     const importFileInput = document.getElementById('importFileInput');
     const toast = document.getElementById('toast');
 
-    // ==================== 全局 toast 提示 ====================
+    // ==================== 全局 toast ====================
     let toastTimer = null;
     function showToast(message, duration = 2500) {
       if (toastTimer) clearTimeout(toastTimer);
@@ -255,7 +232,7 @@
       }, duration);
     }
 
-    // ==================== 配置 ====================
+    // ==================== 全局设置 ====================
     const STORAGE_KEY = 'deepseek_chat_memory_v5';
     const SETTINGS_KEY = 'deepseek_settings_v4';
     const MAX_HISTORY_TOKENS = 10000;
@@ -314,6 +291,7 @@
       reader.readAsDataURL(file);
     }
 
+    // 全局状态
     let systemPersona = settings.persona;
     let aiName = settings.aiName;
     let enableSearch = settings.enableSearch;
@@ -346,18 +324,12 @@
     function saveSettings() {
       settings.persona = personaInput.value.trim(); systemPersona = settings.persona;
       settings.enableSearch = searchToggle.checked; enableSearch = settings.enableSearch;
-
       const userEmoji = userAvatarInput.value.trim();
-      if (userEmoji) { settings.userAvatar = { emoji: userEmoji }; }
-      else { settings.userAvatar = {}; }
-
+      if (userEmoji) { settings.userAvatar = { emoji: userEmoji }; } else { settings.userAvatar = {}; }
       const aiEmoji = aiAvatarInput.value.trim();
-      if (aiEmoji) { settings.aiAvatar = { emoji: aiEmoji }; }
-      else { settings.aiAvatar = {}; }
-
+      if (aiEmoji) { settings.aiAvatar = { emoji: aiEmoji }; } else { settings.aiAvatar = {}; }
       saveSettingsToStorage(); closeSettings();
-      updateAvatarPreviews();
-      renderAllMessages();
+      updateAvatarPreviews(); renderAllMessages();
     }
 
     function clearMemory() {
@@ -369,7 +341,7 @@
       }
     }
 
-    // ==================== 导出记忆（不含对话历史） ====================
+    // ==================== 导出（兼容微信） ====================
     function exportMemory() {
       let text = `=== AI 名字 ===\n${settings.aiName}\n\n=== 人设 ===\n${settings.persona || '(无)'}\n\n=== 长期记忆 ===\n`;
       if (memoryItems.length > 0) {
@@ -377,62 +349,109 @@
       } else {
         text += '(无)';
       }
-      // 不再导出对话历史
+
+      // 尝试触发下载
       const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url;
-      a.download = `记忆备份_${new Date().toISOString().slice(0,10)}_${new Date().toTimeString().slice(0,8).replace(/:/g,'')}.txt`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-      showToast('📤 记忆已导出（不含对话记录）');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `记忆备份_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // 微信可能无法下载，延时判断并提示复制
+      setTimeout(() => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            showToast('📤 已复制到剪贴板（微信不支持直接下载）');
+          }).catch(() => {
+            showToast('📤 导出失败，请用系统浏览器打开');
+          });
+        } else {
+          showToast('📤 导出失败，请用系统浏览器打开');
+        }
+      }, 500);
+
+      URL.revokeObjectURL(url);
     }
 
-    // ==================== 导入记忆（只恢复设置和长期记忆） ====================
+    // ==================== 导入（修复微信兼容性） ====================
     function importMemory(fileInput) {
-      const file = fileInput.files[0]; if (!file) return;
+      const file = fileInput.files[0];
+      if (!file) return;
+
       const reader = new FileReader();
       reader.onload = function(e) {
         const content = e.target.result;
         try {
+          // 解析前确保所有变量均有效
+          if (!content || content.trim().length === 0) throw new Error('文件为空');
+
           const parsed = parseMemoryTxt(content);
-          if (confirm(`即将导入：\nAI名字：${parsed.aiName}\n人设：${parsed.persona || '无'}\n长期记忆：${parsed.memoryItems.length}条\n\n（对话历史不会被导入，将重新开始）`)) {
-            settings.aiName = parsed.aiName; aiName = parsed.aiName;
-            settings.persona = parsed.persona; systemPersona = parsed.persona;
+          // 明确检验必要的字段
+          if (!parsed || typeof parsed.aiName !== 'string') throw new Error('记忆文件格式不正确');
+
+          const confirmMsg = `即将导入：\nAI名字：${parsed.aiName}\n人设：${parsed.persona || '无'}\n长期记忆：${parsed.memoryItems.length}条\n\n（对话历史将被清空）`;
+          if (confirm(confirmMsg)) {
+            // 按顺序赋值，避免暂时性死区
+            const newAiName = parsed.aiName;
+            const newPersona = parsed.persona;
+            const newMemoryItems = parsed.memoryItems;
+
+            settings.aiName = newAiName;
+            aiName = newAiName;
+            settings.persona = newPersona;
+            systemPersona = newPersona;
             saveSettingsToStorage();
-            memoryItems = parsed.memoryItems;
-            // 对话历史清空，重新开始
+            memoryItems = newMemoryItems;
             conversationHistory = [];
             saveConversationData();
             applySettingsToUI();
             chatBox.innerHTML = '';
             addMessage('assistant', '📥 记忆已导入，长期记忆已恢复。');
             showToast('记忆导入成功');
+            closeSettings();
           }
         } catch (error) {
-          alert('导入失败：' + error.message);
+          showToast('导入失败：' + error.message);
+          console.error(error);
         }
+      };
+      reader.onerror = function() {
+        showToast('文件读取失败，请重试');
       };
       reader.readAsText(file, 'UTF-8');
       fileInput.value = '';
     }
 
     function parseMemoryTxt(text) {
+      // 先声明所有变量，再使用
       const lines = text.split('\n');
       const result = { aiName: 'DeepSeek', persona: '', memoryItems: [] };
-      let section = '';
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed === '=== AI 名字 ===') { section = 'ainame'; continue; }
-        if (trimmed === '=== 人设 ===') { section = 'persona'; continue; }
-        if (trimmed === '=== 长期记忆 ===') { section = 'memory'; continue; }
-        if (!trimmed) continue;
-        switch (section) {
-          case 'ainame': result.aiName = trimmed; break;
-          case 'persona': result.persona = trimmed === '(无)' ? '' : trimmed; break;
+      let currentSection = '';   // 改名避免与外部 aiName 混淆
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line === '=== AI 名字 ===') { currentSection = 'ainame'; continue; }
+        if (line === '=== 人设 ===') { currentSection = 'persona'; continue; }
+        if (line === '=== 长期记忆 ===') { currentSection = 'memory'; continue; }
+        if (!line) continue;
+
+        switch (currentSection) {
+          case 'ainame':
+            result.aiName = line;
+            break;
+          case 'persona':
+            result.persona = line === '(无)' ? '' : line;
+            break;
           case 'memory':
-            if (trimmed === '(无)') break;
-            result.memoryItems.push(trimmed.startsWith('- ') ? trimmed.substring(2).trim() : trimmed);
+            if (line === '(无)') break;
+            result.memoryItems.push(line.startsWith('- ') ? line.substring(2).trim() : line);
             break;
         }
       }
+
       return result;
     }
 
@@ -450,7 +469,6 @@
           const data = await res.json();
           const newMemoryItems = data.memory_items || [];
           const summary = data.summary || '';
-          // 长期记忆只追加不覆盖
           memoryItems = [...new Set([...memoryItems, ...newMemoryItems])];
           const recent = conversationHistory.slice(-50);
           const newHistory = [];
@@ -460,7 +478,6 @@
           newHistory.push(...recent);
           conversationHistory = newHistory;
           saveConversationData();
-          // ★ 顶部弹窗
           showToast('🧠 记忆已自动整合');
         } catch (err) {}
       };
@@ -509,14 +526,11 @@
     function createMessageRow(role, content) {
       const row = document.createElement('div'); row.className = `message-row ${role}`;
       row.classList.add(role === 'user' ? 'row-user' : 'row-assistant');
-
       const avatar = document.createElement('div'); avatar.className = 'avatar';
       avatar.innerHTML = getAvatarDisplay(role === 'user' ? 'user' : 'ai');
-
       const bubble = document.createElement('div'); bubble.className = 'msg';
       if (role === 'assistant') { try { bubble.innerHTML = marked.parse(content); } catch (e) { bubble.textContent = content; } wrapTablesInBubble(bubble); }
       else { bubble.textContent = content; }
-
       row.appendChild(avatar); row.appendChild(bubble);
       return row;
     }
