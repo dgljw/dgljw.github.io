@@ -119,21 +119,22 @@ function deepMerge(target, source) {
 }
 
 /**
- * 应用背景样式到 body
+ * 应用背景样式到聊天容器（.app-container）
  * @param {{ type: string, value: string }} bg
  */
 function applyBackground(bg) {
-  const body = document.body;
+  const container = document.querySelector('.app-container');
+  if (!container) return;
   if (!bg || bg.type === 'none') {
-    body.style.background = '';
-    body.style.backgroundSize = '';
+    container.style.background = '';
+    container.style.backgroundSize = '';
     return;
   }
   if (bg.type === 'custom') {
-    body.style.background = `url(${bg.value}) center/cover no-repeat`;
-    body.style.backgroundSize = 'cover';
+    container.style.background = `url(${bg.value}) center/cover no-repeat`;
+    container.style.backgroundSize = 'cover';
   } else {
-    body.style.background = bg.value;
-    body.style.backgroundSize = 'cover';
+    container.style.background = bg.value;
+    container.style.backgroundSize = 'cover';
   }
 }
