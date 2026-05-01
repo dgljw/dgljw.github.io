@@ -14,9 +14,10 @@
     <!-- 头部 -->
     <header class="chat-header">
       <h1 id="chat-title" class="chat-title">小金鱼</h1>
-      <div class="header-actions">
-        <button id="settings-btn" class="header-btn">⚙️</button>
-      </div>
+    <div class="header-actions">
+  <button id="notice-btn" class="header-btn">🔔</button>
+  <button id="settings-btn" class="header-btn">⚙️</button>
+</div>
     </header>
 
     <!-- 聊天消息区域 -->
@@ -98,8 +99,11 @@
         <button id="export-memory-btn" class="btn-small">导出记忆</button>
         <button id="import-memory-btn" class="btn-small">导入记忆</button>
         <input type="file" id="import-file-input" accept=".txt" style="display:none">
-        <button id="clear-chat-btn" class="btn-small" style="background:#e74c3c;color:white">清空对话</button>
-      </div>
+     <button id="clear-chat-btn" class="btn-small" style="background:#e74c3c;color:white">清空对话</button>
+<div style="margin-top:8px;display:flex;gap:6px">
+  <button id="manual-memory-btn" class="btn-small">✍️ 手动输入记忆</button>
+  <button id="snapshot-memory-btn" class="btn-small">📸 记忆当前上下文</button>
+</div></div>
 
       <button id="settings-save" class="btn-primary" style="width:100%;margin-top:8px">保存设置</button>
       <button id="settings-close" class="btn-secondary" style="width:100%;margin-top:4px">取消</button>
