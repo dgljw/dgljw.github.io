@@ -61,10 +61,19 @@ const Extractor = {
         const query = `请为以下角色生成角色扮演系统提示词：\n作品：《${work}》\n角色：${character}`;
 
         try {
-            const res = await fetch(CONFIG.EXTRACT_API, {
+            const res = await fetch(CONFIG.CHAT_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: query })
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: '你是一个角色扮演提示词生成专家。根据用户提供的作品和角色，生成适合角色扮演的完整系统提示词（system prompt），包括角色性格、说话风格、行为习惯等。直接返回角色扮演提示词，不要添加解释或前缀。用文本格式输出。' },
+                        { role: 'user', content: query }
+                    ],
+                    model: CONFIG.MODEL,
+                    temperature: CONFIG.TEMPERATURE,
+                    max_tokens: CONFIG.MAX_TOKENS,
+                    web_search: false
+                })
             });
 
             if (!res.ok) throw new Error(`API 错误: ${res.status}`);
@@ -87,7 +96,9 @@ const Extractor = {
         const countEl = document.getElementById('resultsCount');
         if (!grid) return;
 
-        if (!data || (!data.role_name && !data.system_prompt)) {
+        const prompt = data?.content || '';
+
+        if (!prompt) {
             grid.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">🎬</div>
@@ -98,7 +109,6 @@ const Extractor = {
         }
 
         const roleName = data.role_name || character;
-        const prompt = data.system_prompt || '';
         if (countEl) countEl.textContent = '1 个角色';
 
         grid.innerHTML = `

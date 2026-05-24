@@ -96,8 +96,12 @@ const Settings = {
     bindEvents() {
         // 主题切换
         document.getElementById('themeSelect')?.addEventListener('change', function () {
-            applyTheme(this.value);
-            Storage.updateSetting('theme', this.value);
+            const next = this.value;
+            document.documentElement.setAttribute('data-theme', next);
+            const icon = document.querySelector('.theme-icon');
+            if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
+            Storage.updateSetting('theme', next);
+            showToast(next === 'dark' ? '已切换到深色模式' : '已切换到浅色模式', 'info');
         });
 
         // 背景切换

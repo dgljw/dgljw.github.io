@@ -64,7 +64,7 @@ const Home = {
                 type: 'wechat',
                 icon: '💬',
                 label: '微信',
-                value: '请扫描二维码添加好友',
+                value: '-225588006991',
                 action: 'copy'
             },
             {

@@ -70,7 +70,10 @@ const Chat = {
 
     /** 发送消息 */
     async sendMessage(content, isAuto = false) {
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            this.pendingMessage = content;
+            return;
+        }
         if (!content?.trim()) return;
 
         this.isProcessing = true;
@@ -123,8 +126,14 @@ const Chat = {
         } finally {
             UI.showTyping(false);
             UI.disableInput(false);
-            if (!isAuto) document.getElementById('messageInput')?.focus();
             this.isProcessing = false;
+            if (!isAuto) document.getElementById('messageInput')?.focus();
+            // 处理积压消息
+            if (this.pendingMessage) {
+                const pending = this.pendingMessage;
+                this.pendingMessage = null;
+                setTimeout(() => this.sendMessage(pending), 100);
+            }
         }
     },
 

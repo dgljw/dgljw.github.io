@@ -63,6 +63,9 @@
             if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
             Storage.updateSetting('theme', next);
             showToast(next === 'dark' ? '已切换到深色模式' : '已切换到浅色模式', 'info');
+            // 强制刷新设置面板的 select
+            const themeSelect = document.getElementById('themeSelect');
+            if (themeSelect) themeSelect.value = next;
         },
 
         /** 全局事件 */

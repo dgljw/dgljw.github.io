@@ -92,7 +92,11 @@ const UI = {
     disableInput(disabled) {
         const input = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
-        if (input) input.disabled = disabled;
+        if (input) {
+            input.readOnly = disabled;
+            if (disabled) input.style.opacity = '0.5';
+            else input.style.opacity = '';
+        }
         if (sendBtn) sendBtn.disabled = disabled;
     },
 
