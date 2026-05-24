@@ -66,8 +66,8 @@ const CONFIG = {
     // 默认联系方式
     DEFAULT_CONTACTS: [
         { type: 'wechat', icon: '💚', label: '微信', value: '-225588006991', action: 'copy' },
-        { type: 'email', icon: '📧', label: '邮箱', value: 'example@domain.com', action: 'copy' },
-        { type: 'github', icon: '💻', label: 'GitHub', value: 'github.com/dgljw', action: 'open' }
+        { type: 'github', icon: '💻', label: 'GitHub', value: 'github.com/dgljw', action: 'open' },
+        { type: 'telegram', icon: '✈️', label: 'Telegram', value: 't.me/username', action: 'open' }
     ],
     
     // 预设聊天背景
