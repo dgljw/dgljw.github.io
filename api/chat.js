@@ -70,21 +70,29 @@ module.exports = async function handler(req) {
             ...apiMessages.slice(-20)
         ];
 
-        const resp = await fetch(DEEPSEEK_BASE, {
-            signal: AbortSignal.timeout(8000),
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: model || 'deepseek-chat',
-                messages: finalMessages,
-                temperature: temperature ?? 0.7,
-                max_tokens: max_tokens ?? 2048,
-                stream: stream ?? false
-            })
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        let resp;
+        try {
+            resp = await fetch(DEEPSEEK_BASE, {
+                signal: controller.signal,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: model || 'deepseek-chat',
+                    messages: finalMessages,
+                    temperature: temperature ?? 0.7,
+                    max_tokens: max_tokens ?? 2048,
+                    stream: stream ?? false
+                })
+            });
+        } finally {
+            clearTimeout(timeoutId);
+        }
 
         if (!resp.ok) {
             const errData = await resp.json().catch(() => ({}));
