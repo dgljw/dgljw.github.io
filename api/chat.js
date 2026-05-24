@@ -71,6 +71,7 @@ module.exports = async function handler(req) {
         ];
 
         const resp = await fetch(DEEPSEEK_BASE, {
+            signal: AbortSignal.timeout(8000),
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -113,9 +114,10 @@ module.exports = async function handler(req) {
         });
 
     } catch (err) {
+        const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
         return new Response(JSON.stringify({
             error: err.message,
-            content: `服务异常: ${err.message}`
+            content: isTimeout ? '请求超时，请检查 DEEPSEEK_API_KEY 是否已配置' : `服务异常: ${err.message}`
         }), {
             status: 500,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
