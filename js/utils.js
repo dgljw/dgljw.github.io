@@ -186,7 +186,7 @@ async function copyToClipboard(text) {
  */
 function openLink(url) {
     const fullUrl = (url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`;
-    // 移动端使用 a 标签模拟点击，兼容性最好
+    // 使用 <a> 标签点击方式，移动端兼容性最佳
     const a = document.createElement('a');
     a.href = fullUrl;
     a.target = '_blank';
@@ -194,6 +194,7 @@ function openLink(url) {
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
+    // 延迟移除，确保移动端处理完毕
     setTimeout(() => document.body.removeChild(a), 100);
 }
 
