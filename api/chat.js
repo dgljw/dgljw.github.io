@@ -99,17 +99,10 @@ module.exports = async function handler(req) {
         const data = await resp.json();
         let content = data.choices?.[0]?.message?.content || '抱歉，没有获取到回复';
 
-        // 自动总结检测 - 长对话时触发总结
-        let summary = null;
-        if (apiMessages.length > 10) {
-            summary = await generateSummary(apiMessages.slice(-6));
-        }
-
         return new Response(JSON.stringify({
             content,
             model: data.model,
-            usage: data.usage,
-            summary
+            usage: data.usage
         }), {
             headers: {
                 'Content-Type': 'application/json',
@@ -129,28 +122,3 @@ module.exports = async function handler(req) {
         });
     }
 };
-
-async function generateSummary(messages) {
-    try {
-        const text = messages.map(m => m.content).join('\n');
-        const resp = await fetch(DEEPSEEK_BASE, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: [
-                    { role: 'system', content: '用一句话总结以下对话的核心信息，不超过 60 字，只返回纯文本。' },
-                    { role: 'user', content: text }
-                ],
-                temperature: 0.3,
-                max_tokens: 100
-            })
-        });
-        if (!resp.ok) return null;
-        const data = await resp.json();
-        return data.choices?.[0]?.message?.content?.trim() || null;
-    } catch { return null; }
-}
