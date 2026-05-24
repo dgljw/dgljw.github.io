@@ -51,15 +51,31 @@ export async function POST(request) {
 
         let searchResult = null;
         if (web_search && userContent) {
-            searchResult = await searchBing(userContent);
-            console.log('Web search enabled, result:', searchResult ? 'found' : 'none');
+            // 检查是否有 Bing API Key
+            if (!process.env.BING_SEARCH_API_KEY) {
+                console.log('BING_SEARCH_API_KEY not configured');
+                // 如果没有 API Key，提供当前时间和日期作为参考
+                const now = new Date();
+                const timeStr = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+                const dateStr = now.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                searchResult = `⚠️ 联网搜索功能需要配置 Bing Search API Key。\n\n当前时间参考：${timeStr} (北京时间)\n今天是：${dateStr}\n\n如需联网搜索，请前往 Azure Portal 创建 Bing Search 资源并获取 API Key，然后设置到 Vercel 环境变量 BING_SEARCH_API_KEY。\n\n免费替代方案：\n1. SerpAPI (有免费额度，需注册)\n2. Google Custom Search (有免费额度，需注册)\n3. DuckDuckGo Instant Answer API (免费，但需翻墙)\n4. 国内可用：百度搜索 API (需申请)`;
+            } else {
+                searchResult = await searchBing(userContent);
+                console.log('Web search enabled, result:', searchResult ? 'found' : 'none');
+            }
         } else {
             console.log('Web search disabled or no user content');
         }
 
         let finalSystemPrompt = systemContent;
+        // 始终注入当前时间信息
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        finalSystemPrompt += `\n\n当前时间：${timeStr} (北京时间 ${dateStr})`;
+        
         if (searchResult) {
-            finalSystemPrompt += `\n\n--- 联网搜索结果 ---\n以下是最新的搜索结果，请基于这些信息回答问题：\n${searchResult}\n---`;
+            finalSystemPrompt += `\n\n--- 联网搜索信息 ---\n${searchResult}\n---`;
         }
 
         const finalMessages = [
