@@ -22,7 +22,7 @@ const Chat = {
     /** 加载 AI 头像 */
     loadAiAvatar() {
         const aiAvatarId = Storage.getAiAvatar();
-        const avatar = AVATARS[aiAvatarId] || AVATARS.default;
+        const avatar = (typeof AVATARS !== 'undefined' && AVATARS[aiAvatarId]) || { emoji: '🤖', name: 'AI 助手' };
         this.updateAiAvatar(avatar);
     },
 
