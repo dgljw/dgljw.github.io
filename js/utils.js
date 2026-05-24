@@ -148,35 +148,48 @@ function generateId() {
  * 复制文本到剪贴板
  */
 async function copyToClipboard(text) {
+    // 优先使用 textarea 方案，移动端兼容性最好
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    textarea.setAttribute('readonly', '');
+    document.body.appendChild(textarea);
+    // iOS 兼容
+    textarea.contentEditable = 'true';
+    textarea.readOnly = true;
+    const range = document.createRange();
+    range.selectNodeContents(textarea);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    textarea.setSelectionRange(0, 999999);
     try {
-        await navigator.clipboard.writeText(text);
+        document.execCommand('copy');
         return true;
     } catch {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
+        // 降级到 Clipboard API
         try {
-            document.execCommand('copy');
+            await navigator.clipboard.writeText(text);
             return true;
         } catch {
             return false;
-        } finally {
-            document.body.removeChild(textarea);
         }
+    } finally {
+        document.body.removeChild(textarea);
     }
 }
 
 /**
- * 打开链接
+ * 打开链接（移动端兼容）
  */
 function openLink(url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-    } else {
-        window.open(`https://${url}`, '_blank', 'noopener,noreferrer');
+    const fullUrl = (url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`;
+    const win = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    // 移动端弹窗被拦截时降级为当前页跳转
+    if (!win) {
+        window.location.href = fullUrl;
     }
 }
 
@@ -229,6 +242,8 @@ function applyTheme(theme) {
     } else {
         document.documentElement.setAttribute('data-theme', theme);
     }
+    // 强制应用主题到 html 元素，确保背景色立即更新
+    document.documentElement.style.backgroundColor = '';
     
     const themeIcon = document.querySelector('.theme-icon');
     if (themeIcon) {
