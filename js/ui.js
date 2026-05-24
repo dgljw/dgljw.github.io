@@ -74,26 +74,7 @@ const UI = {
     },
 
     /** 延迟后自动显示主动记忆弹窗 */
-    maybeSuggestMemory() {
-        const settings = Storage.getSettings();
-        if (!settings.autoSummarize) return;
-        const lastSuggest = parseInt(localStorage.getItem('lastMemorySuggest') || '0');
-        const now = Date.now();
-        if (now - lastSuggest < 3600000) return;
-        const history = Storage.getChatHistory();
-        if (history.length < 8) return;
-
-        localStorage.setItem('lastMemorySuggest', now.toString());
-        setTimeout(() => {
-            const panel = document.getElementById('suggestMemory');
-            if (panel) {
-                panel.classList.add('show');
-                setTimeout(() => panel.classList.remove('show'), 8000);
-            }
-        }, 3000);
-    },
-
-    /** 滚动打字指示器到可见区域 */
+    
     scrollTypingIntoView() {
         const indicator = document.getElementById('typingIndicator');
         const container = document.getElementById('messagesContainer');
@@ -155,27 +136,5 @@ const UI = {
         return notification;
     },
 
-    /** 建议记忆弹窗 */
-    renderSuggestMemory() {
-        const div = document.createElement('div');
-        div.id = 'suggestMemory';
-        div.className = 'suggest-memory';
-        div.innerHTML = `
-            <div class="suggest-memory-content">
-                <p>🎯 对话内容较多，需要我记住当前上下文吗？</p>
-                <div class="suggest-memory-actions">
-                    <button class="btn-primary" id="suggestYes">立即记忆</button>
-                    <button class="btn-secondary" id="suggestNo">暂不需要</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(div);
-        document.getElementById('suggestYes')?.addEventListener('click', () => {
-            Memory.memorizeContext();
-            div.classList.remove('show');
-        });
-        document.getElementById('suggestNo')?.addEventListener('click', () => {
-            div.classList.remove('show');
-        });
-    }
+    
 };
