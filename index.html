@@ -73,50 +73,7 @@
                     <div class="motto-edit-hint">点击编辑</div>
                 </div>
 
-                <!-- 联系卡片 -->
-                <div class="contacts-section">
-                    <h2 class="section-title">
-                        <span class="title-line"></span>
-                        <span class="title-text">联系我</span>
-                        <span class="title-line"></span>
-                    </h2>
-                    <div class="contacts-grid">
-                        <div class="contact-card" data-type="email">
-                            <div class="contact-icon">📧</div>
-                            <div class="contact-info">
-                                <h3>邮箱</h3>
-                                <p class="contact-value">example@domain.com</p>
-                            </div>
-                            <button class="contact-action" data-action="copy">复制</button>
-                        </div>
-                        <div class="contact-card" data-type="github">
-                            <div class="contact-icon">💻</div>
-                            <div class="contact-info">
-                                <h3>GitHub</h3>
-                                <p class="contact-value">github.com/username</p>
-                            </div>
-                            <button class="contact-action" data-action="open">打开</button>
-                        </div>
-                        <div class="contact-card" data-type="telegram">
-                            <div class="contact-icon">✈️</div>
-                            <div class="contact-info">
-                                <h3>Telegram</h3>
-                                <p class="contact-value">t.me/username</p>
-                            </div>
-                            <button class="contact-action" data-action="open">打开</button>
-                        </div>
-                        <div class="contact-card add-contact">
-                            <div class="contact-icon">+</div>
-                            <div class="contact-info">
-                                <h3>添加联系方式</h3>
-                                <p>点击配置</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                
-            </div>
         </div>
 
         <!-- AI 聊天视图 -->
@@ -210,33 +167,31 @@
             </div>
         </div>
 
-        <!-- 预设词提取视图 -->
+        <!-- 角色扮演视图 -->
         <div class="view" id="extractView">
             <div class="extract-container">
                 <div class="extract-header">
-                    <h2>AI 预设词提取</h2>
-                    <p class="extract-subtitle">从文本中智能提取关键问题或短语</p>
+                    <h2>🎭 角色扮演提示词生成</h2>
+                    <p class="extract-subtitle">输入作品和角色，AI 生成适合角色扮演的完整预设词</p>
                 </div>
 
                 <div class="extract-input-section">
-                    <div class="input-card">
-                        <div class="card-header">
-                            <div class="card-icon">📝</div>
-                            <h3>输入文本</h3>
-                        </div>
-                        <textarea 
-                            id="extractTextarea" 
-                            placeholder="粘贴一段文字，AI 会帮你提取 3-5 个最有价值的问题或关键短语..."
-                            rows="8"
-                        ></textarea>
-                        <div class="input-stats">
-                            <span id="charCount">0 字符</span>
-                            <button class="btn-clear" id="clearTextBtn">清空</button>
-                        </div>
+                    <div class="extract-form">
+                        <input 
+                            id="extractWork" 
+                            class="extract-input"
+                            placeholder="输入作品名，如：红楼梦、火影忍者..."
+                        >
+                        <span class="extract-sep">×</span>
+                        <input 
+                            id="extractChar" 
+                            class="extract-input"
+                            placeholder="输入角色名，如：林黛玉、鸣人..."
+                        >
                     </div>
 
-                    <button class="extract-btn" id="extractBtn">
-                        <span class="btn-text">开始提取</span>
+                    <button class="extract-btn" id="extractBtn" disabled>
+                        <span class="btn-text">生成预设词</span>
                         <div class="btn-spinner">
                             <div class="spinner-dot"></div>
                             <div class="spinner-dot"></div>
@@ -248,14 +203,14 @@
 
                 <div class="extract-results-section">
                     <div class="results-header">
-                        <h3>提取结果</h3>
-                        <div class="results-count" id="resultsCount">0 个结果</div>
+                        <h3>生成结果</h3>
+                        <div class="results-count" id="resultsCount">0 个角色</div>
                     </div>
                     <div class="results-grid" id="resultsGrid">
                         <div class="empty-state">
-                            <div class="empty-icon">✨</div>
-                            <p>提取结果将显示在这里</p>
-                            <p class="empty-hint">每个结果可以发送到 AI 聊天</p>
+                            <div class="empty-icon">🎬</div>
+                            <p>角色扮演提示词将显示在这里</p>
+                            <p class="empty-hint">提示词可直接复制到 AI 聊天中使用</p>
                         </div>
                     </div>
                 </div>
