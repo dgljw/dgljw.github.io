@@ -1,15 +1,5 @@
 // 诊断接口 - 检查环境变量是否配置正确
-module.exports = async function handler(req) {
-    const cors = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-    };
-
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { headers: cors });
-    }
-
+export async function GET() {
     const hasKey = !!process.env.DEEPSEEK_API_KEY;
     const keyLen = (process.env.DEEPSEEK_API_KEY || '').length;
     const keyPrefix = keyLen > 6 ? process.env.DEEPSEEK_API_KEY.slice(0, 6) + '...' : '(empty)';
@@ -28,6 +18,6 @@ module.exports = async function handler(req) {
             !['PWD', 'SHLVL', 'LOGNAME', 'USER', 'SHELL', 'LANG', 'LC_ALL', 'TZ'].includes(k)
         )
     }), {
-        headers: { 'Content-Type': 'application/json', ...cors }
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
-};
+}
