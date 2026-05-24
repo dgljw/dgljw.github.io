@@ -243,72 +243,110 @@ const Chat = {
         const input = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
 
-        sendBtn?.addEventListener('click', () => {
-            this.sendMessage(input.value);
-            input.value = '';
-            input.style.height = 'auto';
-        });
+        // 确保按钮存在
+        if (!sendBtn || !input) {
+            console.error('聊天页面元素未找到');
+            return;
+        }
 
-        input?.addEventListener('keydown', (e) => {
+        // 发送按钮
+        sendBtn.onclick = () => {
+            const content = input.value.trim();
+            if (content) {
+                this.sendMessage(content);
+                input.value = '';
+                input.style.height = 'auto';
+            }
+        };
+
+        // Enter 键发送
+        input.onkeydown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendBtn.click();
             }
-        });
+        };
 
-        input?.addEventListener('input', () => {
+        // 输入框自适应高度
+        input.oninput = () => {
             input.style.height = 'auto';
             input.style.height = Math.min(input.scrollHeight, 120) + 'px';
             const counter = document.getElementById('tokenCounter');
             if (counter) counter.textContent = `Tokens: ${estimateTokens(input.value)}`;
-        });
+        };
 
         // AI 头像点击更换
-        document.getElementById('aiAvatar')?.addEventListener('click', () => this.showAvatarPicker());
+        const aiAvatar = document.getElementById('aiAvatar');
+        if (aiAvatar) {
+            aiAvatar.onclick = () => this.showAvatarPicker();
+        }
 
-        document.getElementById('imageUploadBtn')?.addEventListener('click', () => {
-            document.getElementById('imageUpload')?.click();
-        });
+        // 图片上传
+        const imageUploadBtn = document.getElementById('imageUploadBtn');
+        const imageUpload = document.getElementById('imageUpload');
+        if (imageUploadBtn && imageUpload) {
+            imageUploadBtn.onclick = () => imageUpload.click();
+            imageUpload.onchange = (e) => {
+                if (e.target.files[0]) this.sendImage(e.target.files[0]);
+            };
+        }
 
-        document.getElementById('imageUpload')?.addEventListener('change', (e) => {
-            if (e.target.files[0]) this.sendImage(e.target.files[0]);
-        });
-
-        document.getElementById('webSearchToggle')?.addEventListener('click', function () {
-            Chat.webSearchEnabled = !Chat.webSearchEnabled;
-            this.classList.toggle('active', Chat.webSearchEnabled);
-            showToast(Chat.webSearchEnabled ? '联网搜索已开启' : '联网搜索已关闭', 'info');
-            Storage.updateSetting('webSearch', Chat.webSearchEnabled);
-        });
+        // 联网搜索开关
+        const webSearchToggle = document.getElementById('webSearchToggle');
+        if (webSearchToggle) {
+            webSearchToggle.classList.toggle('active', this.webSearchEnabled);
+            webSearchToggle.onclick = () => {
+                this.webSearchEnabled = !this.webSearchEnabled;
+                webSearchToggle.classList.toggle('active', this.webSearchEnabled);
+                showToast(this.webSearchEnabled ? '联网搜索已开启' : '联网搜索已关闭', 'info');
+                Storage.updateSetting('webSearch', this.webSearchEnabled);
+            };
+        }
 
         // 表情包自动匹配开关
         const emojiToggle = document.getElementById('emojiToggle');
         if (emojiToggle) {
             emojiToggle.classList.toggle('active', this.emojiAutoEnabled);
-            emojiToggle.addEventListener('click', function () {
-                Chat.emojiAutoEnabled = !Chat.emojiAutoEnabled;
-                this.classList.toggle('active', Chat.emojiAutoEnabled);
-                showToast(Chat.emojiAutoEnabled ? '表情包自动匹配已开启' : '表情包自动匹配已关闭', 'info');
-                Storage.updateSetting('emojiAuto', Chat.emojiAutoEnabled);
-            });
+            emojiToggle.onclick = () => {
+                this.emojiAutoEnabled = !this.emojiAutoEnabled;
+                emojiToggle.classList.toggle('active', this.emojiAutoEnabled);
+                showToast(this.emojiAutoEnabled ? '表情包自动匹配已开启' : '表情包自动匹配已关闭', 'info');
+                Storage.updateSetting('emojiAuto', this.emojiAutoEnabled);
+            };
         }
 
-        document.getElementById('addMemoryBtn')?.addEventListener('click', () => Memory.memorizeContext());
+        // 添加记忆
+        const addMemoryBtn = document.getElementById('addMemoryBtn');
+        if (addMemoryBtn) {
+            addMemoryBtn.onclick = () => Memory.memorizeContext();
+        }
 
-        document.getElementById('exportBtn')?.addEventListener('click', () => this.exportChat());
+        // 导出聊天
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.onclick = () => this.exportChat();
+        }
 
-        document.getElementById('memoryBtn')?.addEventListener('click', () => {
-            Memory.renderPanel();
-            document.getElementById('memoryPanel')?.classList.add('open');
-        });
-
-        document.getElementById('closeMemory')?.addEventListener('click', () => {
-            document.getElementById('memoryPanel')?.classList.remove('open');
-        });
-
-        document.querySelector('.memory-overlay')?.addEventListener('click', () => {
-            document.getElementById('memoryPanel')?.classList.remove('open');
-        });
+        // 记忆管理
+        const memoryBtn = document.getElementById('memoryBtn');
+        const closeMemory = document.getElementById('closeMemory');
+        const memoryOverlay = document.querySelector('.memory-overlay');
+        if (memoryBtn) {
+            memoryBtn.onclick = () => {
+                Memory.renderPanel();
+                document.getElementById('memoryPanel')?.classList.add('open');
+            };
+        }
+        if (closeMemory) {
+            closeMemory.onclick = () => {
+                document.getElementById('memoryPanel')?.classList.remove('open');
+            };
+        }
+        if (memoryOverlay) {
+            memoryOverlay.onclick = () => {
+                document.getElementById('memoryPanel')?.classList.remove('open');
+            };
+        }
     },
 
     /** 显示头像选择器 */
