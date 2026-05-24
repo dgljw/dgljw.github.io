@@ -1,8 +1,9 @@
 // 表情搜索代理 API - Vercel Serverless
-// 优享云 + 兔二备用双源
+// 优享云 + 兔二备用 + 百度(apihz.cn)三源
 
 const YOUXIANG_URL = 'https://api.yxapi.cn/api/douyin/emoji';
 const TOER2_URL = 'https://api.toer2.com/api/emoji/search';
+const BAIXIAO_URL = 'https://cn.apihz.cn/api/img/apihzbqbbaidu.php';
 
 module.exports = async function handler(req) {
     if (req.method === 'OPTIONS') {
@@ -25,7 +26,7 @@ module.exports = async function handler(req) {
         });
     }
 
-    // 优先优享云
+    // 1. 优享云
     try {
         const resp = await fetch(`${YOUXIANG_URL}?keyword=${encodeURIComponent(keyword)}&num=${count}`);
         if (resp.ok) {
@@ -39,7 +40,21 @@ module.exports = async function handler(req) {
         }
     } catch { /* 降级到备用 */ }
 
-    // 备用：兔二
+    // 2. 百度(apihz.cn)
+    try {
+        const baiduResp = await fetch(`${BAIXIAO_URL}?id=88888888&key=88888888&words=${encodeURIComponent(keyword)}&limit=${count}`);
+        if (baiduResp.ok) {
+            const data = await baiduResp.json();
+            if (data.code === 200 && data.res?.length) {
+                const images = data.res.slice(0, count);
+                return new Response(JSON.stringify({ images }), {
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+                });
+            }
+        }
+    } catch { /* 继续降级 */ }
+
+    // 3. 兔二
     if (process.env.TOER2_APPID && process.env.TOER2_KEY) {
         try {
             const resp = await fetch(TOER2_URL, {
@@ -61,10 +76,9 @@ module.exports = async function handler(req) {
                     });
                 }
             }
-        } catch { /* 继续降级 */ }
+        } catch { /* 都失败 */ }
     }
 
-    // 都失败返回空
     return new Response(JSON.stringify({ images: [] }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });

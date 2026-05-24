@@ -3,13 +3,16 @@
 const UI = {
     /** 创建欢迎消息 */
     createWelcomeMessage() {
+        const aiAvatar = Storage.getAiAvatar();
+        const avatar = AVATARS[aiAvatar] || AVATARS.default;
         return `
-            <div class="welcome-icon">🤖</div>
-            <h3>${Storage.getAiName()}</h3>
+            <div class="welcome-icon" style="background: ${avatar.color}">${avatar.emoji}</div>
+            <h3>${avatar.name}</h3>
             <p>我是你的 AI 记忆管家，可以帮你解答问题、记录要点</p>
             <div class="welcome-tips">
                 <span>💡 输入 <code>/表情 关键词</code> 搜索表情包</span>
                 <span>🔍 开启联网搜索获取实时信息</span>
+                <span>🎭 点击 AI 头像可更换形象</span>
             </div>`;
     },
 

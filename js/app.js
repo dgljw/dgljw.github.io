@@ -54,17 +54,27 @@
             }
         },
 
+        /** 切换主题 */
+        toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            const icon = document.querySelector('.theme-icon');
+            if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
+            Storage.updateSetting('theme', next);
+            showToast(next === 'dark' ? '已切换到深色模式' : '已切换到浅色模式', 'info');
+        },
+
         /** 全局事件 */
         bindGlobalEvents() {
-            // 主题切换按钮
-            document.getElementById('themeToggle')?.addEventListener('click', () => {
-                const current = document.documentElement.getAttribute('data-theme');
-                const next = current === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', next);
-                const icon = document.querySelector('.theme-icon');
-                if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
-                Storage.updateSetting('theme', next);
-            });
+            // 主题切换 - 使用 onclick 属性 + 事件委托确保必定触发
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                themeToggle.onclick = (e) => {
+                    e.preventDefault();
+                    App.toggleTheme();
+                };
+            }
 
             // 键盘快捷键
             document.addEventListener('keydown', (e) => {

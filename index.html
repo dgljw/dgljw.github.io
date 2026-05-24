@@ -32,8 +32,8 @@
                     <div class="nav-underline"></div>
                 </button>
                 <button class="nav-item" data-view="extract">
-                    <span class="nav-icon">🔍</span>
-                    <span class="nav-text">预设词提取</span>
+                    <span class="nav-icon">🎭</span>
+                    <span class="nav-text">角色扮演</span>
                     <div class="nav-underline"></div>
                 </button>
             </div>
@@ -58,7 +58,7 @@
                     <div class="avatar-wrapper">
                         <div class="avatar-glow"></div>
                         <div class="avatar" id="userAvatar">
-                            <div class="avatar-placeholder">👤</div>
+                            <div class="avatar-placeholder">🌰</div>
                             <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
                         </div>
                         <button class="avatar-edit" id="editAvatar">✏️</button>
@@ -125,9 +125,11 @@
                 <!-- 聊天头部 -->
                 <div class="chat-header">
                     <div class="chat-title">
-                        <div class="ai-avatar">🤖</div>
+                        <div class="ai-avatar" id="aiAvatar">
+                            <span class="avatar-emoji">🤖</span>
+                        </div>
                         <div>
-                            <h2>DeepSeek 记忆管家</h2>
+                            <h2 id="aiName">DeepSeek 记忆管家</h2>
                             <div class="chat-status" id="chatStatus">
                                 <span class="status-dot online"></span>
                                 <span>在线</span>
@@ -175,6 +177,9 @@
                         <input type="file" id="imageUpload" accept="image/*" style="display: none;">
                         <button class="btn-action" id="webSearchToggle" title="联网搜索">
                             <span>🌐</span>
+                        </button>
+                        <button class="btn-action" id="emojiToggle" title="表情包自动匹配">
+                            <span>😄</span>
                         </button>
                         <button class="btn-action" id="addMemoryBtn" title="添加记忆">
                             <span>💾</span>

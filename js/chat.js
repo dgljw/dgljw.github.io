@@ -9,12 +9,21 @@ const Chat = {
     /** 初始化 */
     init() {
         this.webSearchEnabled = Storage.getSettings().webSearch;
+        this.emojiAutoEnabled = Storage.getSettings().emojiAuto || false;
         this.chatHistory = Storage.getChatHistory();
+        this.loadAiAvatar();
         this.renderHistory();
         this.bindEvents();
         document.addEventListener('viewChanged', (e) => {
             if (e.detail.view === 'chat') this.scrollToBottom();
         });
+    },
+
+    /** 加载 AI 头像 */
+    loadAiAvatar() {
+        const aiAvatarId = Storage.getAiAvatar();
+        const avatar = AVATARS[aiAvatarId] || AVATARS.default;
+        this.updateAiAvatar(avatar);
     },
 
     /** 渲染历史消息 */
@@ -95,6 +104,11 @@ const Chat = {
             // 自动压缩检查
             if (Memory.shouldCompress()) {
                 setTimeout(() => Memory.compressMemories(), 500);
+            }
+
+            // 表情自动匹配
+            if (this.emojiAutoEnabled) {
+                setTimeout(() => this.searchEmoji(aiContent, true), 1000);
             }
         } catch (err) {
             const errMsg = { role: 'assistant', content: `请求失败: ${err.message}`, timestamp: Date.now() };
@@ -249,6 +263,9 @@ const Chat = {
             if (counter) counter.textContent = `Tokens: ${estimateTokens(input.value)}`;
         });
 
+        // AI 头像点击更换
+        document.getElementById('aiAvatar')?.addEventListener('click', () => this.showAvatarPicker());
+
         document.getElementById('imageUploadBtn')?.addEventListener('click', () => {
             document.getElementById('imageUpload')?.click();
         });
@@ -263,6 +280,18 @@ const Chat = {
             showToast(Chat.webSearchEnabled ? '联网搜索已开启' : '联网搜索已关闭', 'info');
             Storage.updateSetting('webSearch', Chat.webSearchEnabled);
         });
+
+        // 表情包自动匹配开关
+        const emojiToggle = document.getElementById('emojiToggle');
+        if (emojiToggle) {
+            emojiToggle.classList.toggle('active', this.emojiAutoEnabled);
+            emojiToggle.addEventListener('click', function () {
+                Chat.emojiAutoEnabled = !Chat.emojiAutoEnabled;
+                this.classList.toggle('active', Chat.emojiAutoEnabled);
+                showToast(Chat.emojiAutoEnabled ? '表情包自动匹配已开启' : '表情包自动匹配已关闭', 'info');
+                Storage.updateSetting('emojiAuto', Chat.emojiAutoEnabled);
+            });
+        }
 
         document.getElementById('addMemoryBtn')?.addEventListener('click', () => Memory.memorizeContext());
 
@@ -280,5 +309,114 @@ const Chat = {
         document.querySelector('.memory-overlay')?.addEventListener('click', () => {
             document.getElementById('memoryPanel')?.classList.remove('open');
         });
+    },
+
+    /** 显示头像选择器 */
+    showAvatarPicker() {
+        const picker = document.createElement('div');
+        picker.className = 'avatar-picker';
+        picker.innerHTML = `
+            <div class="picker-header">
+                <h3>选择 AI 头像</h3>
+                <button class="picker-close">×</button>
+            </div>
+            <div class="picker-grid">
+                ${Object.entries(AVATARS).map(([id, avatar]) => `
+                    <div class="avatar-option ${id === Storage.getAiAvatar() ? 'selected' : ''}" data-id="${id}">
+                        <div class="option-emoji" style="background: ${avatar.color}">${avatar.emoji}</div>
+                        <div class="option-name">${avatar.name}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        document.body.appendChild(picker);
+        setTimeout(() => picker.classList.add('show'), 10);
+
+        // 关闭按钮
+        picker.querySelector('.picker-close').addEventListener('click', () => {
+            picker.classList.remove('show');
+            setTimeout(() => picker.remove(), 300);
+        });
+
+        // 点击外部关闭
+        picker.addEventListener('click', (e) => {
+            if (e.target === picker) {
+                picker.classList.remove('show');
+                setTimeout(() => picker.remove(), 300);
+            }
+        });
+
+        // 选择头像
+        picker.querySelectorAll('.avatar-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const avatarId = option.dataset.id;
+                const avatar = AVATARS[avatarId];
+                if (avatar) {
+                    Storage.setAiAvatar(avatarId);
+                    this.updateAiAvatar(avatar);
+                    picker.classList.remove('show');
+                    setTimeout(() => picker.remove(), 300);
+                    showToast(`已更换为 ${avatar.name}`, 'success');
+                }
+            });
+        });
+    },
+
+    /** 更新 AI 头像显示 */
+    updateAiAvatar(avatar) {
+        const aiAvatar = document.getElementById('aiAvatar');
+        const aiName = document.getElementById('aiName');
+        if (aiAvatar) {
+            aiAvatar.querySelector('.avatar-emoji').textContent = avatar.emoji;
+            aiAvatar.style.setProperty('--avatar-color', avatar.color);
+        }
+        if (aiName) {
+            aiName.textContent = `${avatar.name} 记忆管家`;
+        }
+    },
+
+    /** 表情搜索 - 增强版，支持自动匹配 */
+    async searchEmoji(keyword, auto = false) {
+        try {
+            // 如果是自动匹配，先获取关键词
+            let searchKeyword = keyword;
+            if (auto && typeof suggestEmojiKeywords === 'function') {
+                const suggestions = suggestEmojiKeywords(keyword);
+                if (suggestions.length > 0) {
+                    searchKeyword = suggestions[0];
+                }
+            }
+
+            const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(searchKeyword)}&count=8`);
+            const data = await res.json();
+            if (data.images?.length) {
+                const html = '<div class="emoji-grid">' +
+                    data.images.map(url => `<img src="${url}" alt="表情" loading="lazy" onclick="window.open('${url}')">`).join('') +
+                    '</div>';
+                const aiMsg = { 
+                    role: 'assistant', 
+                    content: `${auto ? '根据聊天内容推荐' : '搜索'} "${searchKeyword}" 的表情：\n${html}`, 
+                    timestamp: Date.now() 
+                };
+                this.appendMessage(aiMsg);
+                Storage.addChatMessage(aiMsg);
+                this.chatHistory = Storage.getChatHistory();
+            } else {
+                if (!auto) {
+                    const aiMsg = { role: 'assistant', content: `未找到"${searchKeyword}"的表情包`, timestamp: Date.now() };
+                    this.appendMessage(aiMsg);
+                    Storage.addChatMessage(aiMsg);
+                    this.chatHistory = Storage.getChatHistory();
+                }
+            }
+        } catch {
+            if (!auto) {
+                const aiMsg = { role: 'assistant', content: '表情搜索失败，请稍后重试', timestamp: Date.now() };
+                this.appendMessage(aiMsg);
+                Storage.addChatMessage(aiMsg);
+                this.chatHistory = Storage.getChatHistory();
+            }
+        }
     }
 };

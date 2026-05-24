@@ -1,4 +1,4 @@
-// 预设词提取 API - Vercel Serverless
+// 角色扮演提示词生成 API - Vercel Serverless
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
 module.exports = async function handler(req) {
@@ -17,16 +17,14 @@ module.exports = async function handler(req) {
     }
 
     try {
-        const { text, count } = await req.json();
-        if (!text || text.trim().length < 10) {
+        const { text } = await req.json();
+        if (!text || text.trim().length < 2) {
             return new Response(JSON.stringify({
-                items: ['文本太短，请提供更多内容']
+                error: '请提供作品和角色信息'
             }), {
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
         }
-
-        const targetCount = count || 5;
 
         const resp = await fetch(DEEPSEEK_BASE, {
             method: 'POST',
@@ -38,28 +36,27 @@ module.exports = async function handler(req) {
                 model: 'deepseek-chat',
                 messages: [{
                     role: 'system',
-                    content: `你是一个内容分析助手。从以下文本中提取 ${targetCount} 个最有价值的问题或关键短语，每个不超过 20 个字。
+                    content: `你是一个角色扮演提示词专家。根据用户输入的作品和角色，生成适合 AI 角色扮演的系统提示词。
 
-要求：
-1. 问题应该基于文本的核心内容，可直接用于 AI 对话
-2. 关键短语应精准概括文本要点
-3. 以 JSON 数组返回，格式：{"items": ["问题1", "问题2", ...]}
-4. 避免重复和过于宽泛的提问`
+输出一个 JSON 对象：
+{
+    "role_name": "角色名（你扮演的角色名）",
+    "system_prompt": "完整的系统提示词（200-400字），要包含以下内容：\n1. 角色的身份背景（来自哪部作品、什么身份）\n2. 性格特点与说话风格（语气、口头禅、表达习惯）\n3. 知识范围（角色知道什么、不知道什么）\n4. 行为准则（角色会怎么做、不会怎么做）\n5. 与用户互动的注意事项\n格式要求：提示词整体用第一人称，口语化但专业。"
                 }, {
                     role: 'user',
                     content: text
                 }],
-                temperature: 0.5,
-                max_tokens: 500,
+                temperature: 0.7,
+                max_tokens: 1200,
                 response_format: { type: 'json_object' }
             })
         });
 
         if (!resp.ok) {
-            const errData = await resp.json().catch(() => ({}));
             return new Response(JSON.stringify({
-                error: resp.statusText,
-                items: []
+                error: `API 错误: ${resp.status}`,
+                role_name: '',
+                system_prompt: ''
             }), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -72,15 +69,16 @@ module.exports = async function handler(req) {
         try {
             const parsed = JSON.parse(content);
             return new Response(JSON.stringify({
-                items: parsed.items || parsed.results || []
+                role_name: parsed.role_name || '角色',
+                system_prompt: parsed.system_prompt || ''
             }), {
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
         } catch {
-            // 解析失败，尝试按行分割
-            const lines = content.split('\n').filter(l => l.trim());
-            const items = lines.map(l => l.replace(/^\d+[\.\、\s]+/, '').replace(/^["\[\]]+|["\[\]]+$/g, '').trim());
-            return new Response(JSON.stringify({ items: items.slice(0, targetCount) }), {
+            return new Response(JSON.stringify({
+                role_name: '角色',
+                system_prompt: content
+            }), {
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
         }
@@ -88,9 +86,10 @@ module.exports = async function handler(req) {
     } catch (err) {
         return new Response(JSON.stringify({
             error: err.message,
-            items: []
+            role_name: '',
+            system_prompt: ''
         }), {
-            status: 500,
+            status: 200,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
     }
