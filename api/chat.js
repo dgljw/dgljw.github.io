@@ -52,6 +52,9 @@ export async function POST(request) {
         let searchResult = null;
         if (web_search && userContent) {
             searchResult = await searchBing(userContent);
+            console.log('Web search enabled, result:', searchResult ? 'found' : 'none');
+        } else {
+            console.log('Web search disabled or no user content');
         }
 
         let finalSystemPrompt = systemContent;
