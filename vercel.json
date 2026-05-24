@@ -1,0 +1,32 @@
+{
+    "version": 2,
+    "buildCommand": "",
+    "outputDirectory": "",
+    "functions": {
+        "api/chat.js": { "memory": 512, "maxDuration": 60 },
+        "api/summarize.js": { "memory": 512, "maxDuration": 30 },
+        "api/extract.js": { "memory": 512, "maxDuration": 30 },
+        "api/emoji-proxy.js": { "memory": 256, "maxDuration": 15 },
+        "api/vision.js": { "memory": 512, "maxDuration": 30 }
+    },
+    "rewrites": [
+        { "source": "/api/chat", "destination": "/api/chat.js" },
+        { "source": "/api/summarize", "destination": "/api/summarize.js" },
+        { "source": "/api/extract", "destination": "/api/extract.js" },
+        { "source": "/api/emoji-proxy", "destination": "/api/emoji-proxy.js" },
+        { "source": "/api/vision", "destination": "/api/vision.js" }
+    ],
+    "headers": [
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                { "key": "Access-Control-Allow-Origin", "value": "*" },
+                { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+                { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+            ]
+        }
+    ],
+    "env": {
+        "NODEJS_HELPERS": "0"
+    }
+}
