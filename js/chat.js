@@ -79,6 +79,10 @@ const Chat = {
 
         try {
             const response = await this.callChatAPI(content);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP ${response.status}`);
+            }
             const data = await response.json();
             const aiContent = data.content || data.message || '抱歉，AI 没有返回有效回复。';
             const aiMsg = { role: 'assistant', content: aiContent, timestamp: Date.now() };
