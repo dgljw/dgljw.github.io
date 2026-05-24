@@ -22,6 +22,13 @@ const Chat = {
     /** 加载 AI 头像 */
     loadAiAvatar() {
         const aiAvatarId = Storage.getAiAvatar();
+        if (aiAvatarId === 'custom') {
+            const customBase64 = Storage.getCustomAvatar();
+            if (customBase64) {
+                this.updateCustomAvatar(customBase64);
+                return;
+            }
+        }
         const avatar = (typeof AVATARS !== 'undefined' && AVATARS[aiAvatarId]) || { emoji: '🤖', name: 'AI 助手' };
         this.updateAiAvatar(avatar);
     },
@@ -126,17 +133,25 @@ const Chat = {
         const context = Memory.buildContext();
         const recentMessages = Memory.getChatContext();
 
-        return fetch(CONFIG.CHAT_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                messages: [context, ...recentMessages, { role: 'user', content: userContent }],
-                model: CONFIG.MODEL,
-                temperature: CONFIG.TEMPERATURE,
-                max_tokens: CONFIG.MAX_TOKENS,
-                web_search: this.webSearchEnabled
-            })
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        try {
+            return await fetch(CONFIG.CHAT_API, {
+                signal: controller.signal,
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [context, ...recentMessages, { role: 'user', content: userContent }],
+                    model: CONFIG.MODEL,
+                    temperature: CONFIG.TEMPERATURE,
+                    max_tokens: CONFIG.MAX_TOKENS,
+                    web_search: this.webSearchEnabled
+                })
+            });
+        } finally {
+            clearTimeout(timeoutId);
+        }
     },
 
     /** 表情搜索 */
@@ -365,6 +380,12 @@ const Chat = {
                         <div class="option-name">${avatar.name}</div>
                     </div>
                 `).join('')}
+                <!-- 自定义上传选项 -->
+                <div class="avatar-option custom-upload" id="customAvatarUploadBtn">
+                    <div class="option-emoji" style="background: #9b59b6">📁</div>
+                    <div class="option-name">上传图片</div>
+                    <input type="file" id="customAvatarInput" accept="image/*" style="display: none">
+                </div>
             </div>
         `;
 
@@ -386,7 +407,7 @@ const Chat = {
         });
 
         // 选择头像
-        picker.querySelectorAll('.avatar-option').forEach(option => {
+        picker.querySelectorAll('.avatar-option:not(.custom-upload)').forEach(option => {
             option.addEventListener('click', () => {
                 const avatarId = option.dataset.id;
                 const avatar = AVATARS[avatarId];
@@ -399,6 +420,46 @@ const Chat = {
                 }
             });
         });
+
+        // 自定义上传
+        const customUploadBtn = picker.querySelector('#customAvatarUploadBtn');
+        const customAvatarInput = picker.querySelector('#customAvatarInput');
+        
+        if (customUploadBtn && customAvatarInput) {
+            customUploadBtn.addEventListener('click', () => {
+                customAvatarInput.click();
+            });
+
+            customAvatarInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const base64 = await compressImage(file);
+                    Storage.setAiAvatar('custom');
+                    Storage.setCustomAvatar(base64);
+                    this.updateCustomAvatar(base64);
+                    picker.classList.remove('show');
+                    setTimeout(() => picker.remove(), 300);
+                    showToast('自定义头像已设置', 'success');
+                } catch (err) {
+                    showToast('头像上传失败', 'error');
+                }
+            });
+        }
+    },
+
+    /** 更新自定义头像 */
+    updateCustomAvatar(base64) {
+        const aiAvatar = document.getElementById('aiAvatar');
+        const aiName = document.getElementById('aiName');
+        if (aiAvatar) {
+            aiAvatar.innerHTML = `<img src="${base64}" alt="自定义头像" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            aiAvatar.style.setProperty('--avatar-color', '#9b59b6');
+        }
+        if (aiName) {
+            aiName.textContent = '自定义头像 记忆管家';
+        }
     },
 
     /** 更新 AI 头像显示 */

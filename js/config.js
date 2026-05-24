@@ -33,6 +33,7 @@ const CONFIG = {
         SETTINGS: 'deepseek_settings',
         USER_AVATAR: 'user_avatar',
         AI_AVATAR: 'ai_avatar',
+        CUSTOM_AVATAR: 'custom_avatar',
         USER_NAME: 'user_name',
         AI_NAME: 'ai_name',
         SYSTEM_PROMPT: 'system_prompt',

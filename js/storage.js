@@ -177,6 +177,20 @@ const Storage = {
     },
 
     /**
+     * 获取自定义头像
+     */
+    getCustomAvatar() {
+        return this.get(CONFIG.STORAGE_KEYS.CUSTOM_AVATAR, '');
+    },
+
+    /**
+     * 设置自定义头像
+     */
+    setCustomAvatar(base64) {
+        return this.set(CONFIG.STORAGE_KEYS.CUSTOM_AVATAR, base64);
+    },
+
+    /**
      * 获取用户名
      */
     getUserName() {
