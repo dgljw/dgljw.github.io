@@ -1,4 +1,4 @@
-// 聊天 API - Vercel Serverless
+// 聊天 API - Vercel Serverless (fetch-style API)
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 const BING_SEARCH_URL = 'https://api.bing.microsoft.com/v7.0/search';
 
@@ -20,23 +20,19 @@ async function searchBing(query) {
     } catch { return null; }
 }
 
-module.exports = async function handler(req) {
-    if (req.method === 'OPTIONS') {
-        return new Response(null, {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            }
-        });
-    }
+export async function OPTIONS() {
+    return new Response(null, {
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        }
+    });
+}
 
-    if (req.method !== 'POST') {
-        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
-    }
-
+export async function POST(request) {
     try {
-        const { messages, model, temperature, max_tokens, web_search, stream } = await req.json();
+        const { messages, model, temperature, max_tokens, web_search, stream } = await request.json();
         let systemContent = '';
         let userContent = '';
         const apiMessages = [];
@@ -46,7 +42,6 @@ module.exports = async function handler(req) {
             if (msg.role === 'system') {
                 systemContent = text;
             } else if (msg.role === 'user') {
-                // 最后一条用户消息用于联网搜索
                 if (!userContent) userContent = text;
                 apiMessages.push({ role: 'user', content: text });
             } else if (msg.role === 'assistant') {
@@ -54,7 +49,6 @@ module.exports = async function handler(req) {
             }
         }
 
-        // 联网搜索注入
         let searchResult = null;
         if (web_search && userContent) {
             searchResult = await searchBing(userContent);
@@ -131,4 +125,4 @@ module.exports = async function handler(req) {
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
     }
-};
+}
