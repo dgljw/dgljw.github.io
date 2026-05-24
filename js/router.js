@@ -21,6 +21,16 @@ const Router = {
                 this.navigate(view);
             });
         });
+        
+        // 移动端菜单切换
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.querySelector('.nav-menu');
+        if (menuToggle && navMenu) {
+            menuToggle.addEventListener('click', () => {
+                menuToggle.classList.toggle('open');
+                navMenu.classList.toggle('open');
+            });
+        }
     },
     
     /**
