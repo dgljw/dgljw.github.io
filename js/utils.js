@@ -186,11 +186,15 @@ async function copyToClipboard(text) {
  */
 function openLink(url) {
     const fullUrl = (url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`;
-    const win = window.open(fullUrl, '_blank', 'noopener,noreferrer');
-    // 移动端弹窗被拦截时降级为当前页跳转
-    if (!win) {
-        window.location.href = fullUrl;
-    }
+    // 移动端使用 a 标签模拟点击，兼容性最好
+    const a = document.createElement('a');
+    a.href = fullUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => document.body.removeChild(a), 100);
 }
 
 /**
