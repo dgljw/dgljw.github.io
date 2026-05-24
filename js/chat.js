@@ -163,33 +163,6 @@ const Chat = {
         }
     },
 
-    /** 表情搜索 */
-    async searchEmoji(keyword) {
-        try {
-            const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(keyword)}&count=8`);
-            const data = await res.json();
-            if (data.images?.length) {
-                const html = '<div class="emoji-grid">' +
-                    data.images.map(url => `<img src="${url}" alt="表情" loading="lazy" onclick="window.open('${url}')">`).join('') +
-                    '</div>';
-                const aiMsg = { role: 'assistant', content: `搜索"${keyword}"的表情：\n${html}`, timestamp: Date.now() };
-                this.appendMessage(aiMsg);
-                Storage.addChatMessage(aiMsg);
-                this.chatHistory = Storage.getChatHistory();
-            } else {
-                const aiMsg = { role: 'assistant', content: `未找到"${keyword}"的表情包`, timestamp: Date.now() };
-                this.appendMessage(aiMsg);
-                Storage.addChatMessage(aiMsg);
-                this.chatHistory = Storage.getChatHistory();
-            }
-        } catch {
-            const aiMsg = { role: 'assistant', content: '表情搜索失败，请稍后重试', timestamp: Date.now() };
-            this.appendMessage(aiMsg);
-            Storage.addChatMessage(aiMsg);
-            this.chatHistory = Storage.getChatHistory();
-        }
-    },
-
     /** 发送图片 */
     async sendImage(file) {
         if (this.isProcessing) return;
@@ -484,7 +457,7 @@ const Chat = {
         }
     },
 
-    /** 表情搜索 - 增强版，支持自动匹配 */
+    /** 表情搜索 - 增强版，支持自动匹配和真人式输出 */
     async searchEmoji(keyword, auto = false) {
         try {
             // 如果是自动匹配，先获取关键词
@@ -496,15 +469,16 @@ const Chat = {
                 }
             }
 
-            const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(searchKeyword)}&count=8`);
+            const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(searchKeyword)}&count=1`);
             const data = await res.json();
             if (data.images?.length) {
-                const html = '<div class="emoji-grid">' +
-                    data.images.map(url => `<img src="${url}" alt="表情" loading="lazy" onclick="window.open('${url}')">`).join('') +
-                    '</div>';
+                // 只取第一张图片
+                const url = data.images[0];
+                // 真人式输出：直接显示图片，不显示搜索提示
+                const html = `<div class="emoji-single"><img src="${url}" alt="${searchKeyword}表情" loading="lazy" onclick="window.open('${url}', '_blank')"></div>`;
                 const aiMsg = { 
                     role: 'assistant', 
-                    content: `${auto ? '根据聊天内容推荐' : '搜索'} "${searchKeyword}" 的表情：\n${html}`, 
+                    content: html,
                     timestamp: Date.now() 
                 };
                 this.appendMessage(aiMsg);
@@ -512,7 +486,7 @@ const Chat = {
                 this.chatHistory = Storage.getChatHistory();
             } else {
                 if (!auto) {
-                    const aiMsg = { role: 'assistant', content: `未找到"${searchKeyword}"的表情包`, timestamp: Date.now() };
+                    const aiMsg = { role: 'assistant', content: `没找到"${searchKeyword}"相关的表情包呢~`, timestamp: Date.now() };
                     this.appendMessage(aiMsg);
                     Storage.addChatMessage(aiMsg);
                     this.chatHistory = Storage.getChatHistory();
