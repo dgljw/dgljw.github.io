@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRUTAL BREW — 粗野咖啡</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+@font-face {
+  font-family: 'BrutalDisplay';
+  src: local('Impact'), local('Arial Black'), local('sans-serif');
+  font-weight: 900;
+}
+@font-face {
+  font-family: 'BrutalMono';
+  src: local('Courier New'), local('monospace');
+}
+
+:root {
+  --acid-yellow: #D9FF00;
+  --toxic-green: #00FF66;
+  --hot-magenta: #FF007F;
+  --electric-blue: #0033FF;
+  --void: #0D0D0D;
+  --blast-red: #FF2200;
+  --raw-white: #F2F0E8;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'BrutalDisplay', 'Arial Black', sans-serif;
+  background: var(--raw-white);
+  color: var(--void);
+  line-height: 1;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--void);
+  color: var(--acid-yellow);
+  border-bottom: 6px solid var(--hot-magenta);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  font-size: clamp(1.6rem, 3vw, 2.6rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+.logo span { color: var(--hot-magenta); }
+nav { display: flex; gap: 24px; }
+nav a {
+  color: var(--raw-white);
+  text-decoration: none;
+  font-family: 'BrutalMono', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.1s;
+}
+nav a:hover { border-bottom-color: var(--acid-yellow); }
+
+/* ── HERO ── */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 80vh;
+  align-items: start;
+}
+.hero-text {
+  background: var(--electric-blue);
+  color: var(--raw-white);
+  padding: clamp(2rem, 6vw, 5rem) clamp(1.5rem, 4vw, 3rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+}
+.hero-text .tag {
+  font-family: 'BrutalMono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  background: var(--void);
+  display: inline-block;
+  padding: 6px 12px;
+  align-self: flex-start;
+}
+.hero-text h1 {
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+.hero-text h1 em {
+  font-style: normal;
+  color: var(--acid-yellow);
+  -webkit-text-stroke: 3px var(--void);
+}
+.hero-text .sub {
+  font-family: 'BrutalMono', monospace;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--acid-yellow);
+  max-width: 30ch;
+}
+.hero-visual {
+  background: var(--acid-yellow);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-visual .massive-text {
+  font-size: clamp(6rem, 18vw, 14rem);
+  color: var(--hot-magenta);
+  opacity: 0.25;
+  transform: rotate(-8deg) scale(1.3);
+  user-select: none;
+  pointer-events: none;
+  letter-spacing: -0.05em;
+}
+
+/* ── BANNER ── */
+.banner {
+  background: var(--blast-red);
+  color: var(--raw-white);
+  text-align: center;
+  padding: 14px 20px;
+  font-size: clamp(0.85rem, 2vw, 1.1rem);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'BrutalMono', monospace;
+}
+.banner strong { color: var(--void); background: var(--acid-yellow); padding: 2px 6px; }
+
+/* ── MENU ── */
+#menu { padding: clamp(2rem, 6vw, 5rem) clamp(1rem, 4vw, 2rem); }
+#menu h2 {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  text-transform: uppercase;
+  text-align: left;
+  margin-bottom: 3rem;
+  position: relative;
+  display: inline-block;
+}
+#menu h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px; left: 0;
+  width: 100%; height: 8px;
+  background: var(--hot-magenta);
+}
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0;
+  border-top: 4px solid var(--void);
+}
+.menu-item {
+  border-bottom: 4px solid var(--void);
+  border-right: 4px solid var(--void);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--raw-white);
+  transition: background 0.1s;
+}
+.menu-item:nth-child(4n+1) { border-left: 4px solid var(--void); }
+.menu-item:hover { background: var(--void); color: var(--acid-yellow); }
+.menu-item:hover .price { color: var(--toxic-green); }
+.menu-item h3 {
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.menu-item p {
+  font-family: 'BrutalMono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+.price {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--blast-red);
+  margin-top: auto;
+}
+
+/* ── ORIGIN ── */
+#origin {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0;
+  min-height: 50vh;
+}
+.origin-text {
+  background: var(--void);
+  color: var(--raw-white);
+  padding: clamp(2rem, 6vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+.origin-text h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+.origin-text h2 span { color: var(--hot-magenta); }
+.origin-text p {
+  font-family: 'BrutalMono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  max-width: 45ch;
+}
+.origin-visual {
+  background: var(--toxic-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.origin-visual .stamp {
+  font-size: clamp(3rem, 8vw, 6rem);
+  color: var(--void);
+  transform: rotate(15deg);
+  text-transform: uppercase;
+  border: 6px solid var(--void);
+  padding: 12px 24px;
+}
+
+/* ── CTA ── */
+.cta {
+  background: var(--hot-magenta);
+  color: var(--void);
+  padding: clamp(2rem, 6vw, 4rem);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.cta h2 {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  text-transform: uppercase;
+  line-height: 0.92;
+}
+.cta h2 em {
+  font-style: normal;
+  color: var(--acid-yellow);
+  -webkit-text-stroke: 2px var(--void);
+}
+.cta-btn {
+  display: inline-block;
+  font-family: 'BrutalDisplay', 'Arial Black', sans-serif;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: var(--void);
+  color: var(--acid-yellow);
+  border: none;
+  padding: 18px 48px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+  text-decoration: none;
+}
+.cta-btn:hover { background: var(--electric-blue); color: var(--raw-white); transform: scale(1.04); }
+.cta-btn:active { transform: scale(0.97); }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--void);
+  color: var(--raw-white);
+  padding: 32px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-family: 'BrutalMono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  border-top: 6px solid var(--acid-yellow);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+  .hero-visual { min-height: 40vh; }
+  .hero-visual .massive-text { font-size: 10rem; }
+  #origin { grid-template-columns: 1fr; }
+  .origin-visual { min-height: 30vh; }
+  header { flex-direction: column; gap: 12px; }
+  .menu-item { border-left: 4px solid var(--void); }
+}
+@media (max-width: 480px) {
+  nav { gap: 12px; flex-wrap: wrap; justify-content: center; }
+  nav a { font-size: 0.7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BRUTAL <span>BREW</span></div>
+  <nav>
+    <a href="#menu">咖啡单</a>
+    <a href="#origin">产地</a>
+    <a href="#cta">来找我们</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-text">
+    <span class="tag">SINCE 2025</span>
+    <h1>喝<em>狠</em>的<br>咖啡</h1>
+    <p class="sub">不跟你谈风味轮，不跟你聊花果香。我们只做一件事：用最野的豆子，最暴的萃取，轰开你的早晨。</p>
+  </div>
+  <div class="hero-visual">
+    <div class="massive-text">☕</div>
+  </div>
+</section>
+
+<div class="banner">
+  每日 6:00-22:00  ·  <strong>凌晨4点烘焙</strong>  ·  没有外卖，自己来拿
+</div>
+
+<section id="menu">
+  <h2>咖啡单</h2>
+  <div class="menu-grid">
+    <div class="menu-item">
+      <h3>黑 锤</h3>
+      <p>双份浓缩直灌 / 不兑水不兑奶不道歉</p>
+      <span class="price">¥22</span>
+    </div>
+    <div class="menu-item">
+      <h3>脏 白</h3>
+      <p>Ristretto 撞击冰牛奶 / 分层不搅拌</p>
+      <span class="price">¥26</span>
+    </div>
+    <div class="menu-item">
+      <h3>冷 萃 弹</h3>
+      <p>18小时冷泡 / 氮气加压 / 像喝啤酒一样喝咖啡</p>
+      <span class="price">¥30</span>
+    </div>
+    <div class="menu-item">
+      <h3>手 冲 选 手</h3>
+      <p>当日单产地的豆 / V60 三刀流</p>
+      <span class="price">¥38</span>
+    </div>
+    <div class="menu-item">
+      <h3>暴 力 拿 铁</h3>
+      <p>三倍浓缩 + 椰奶 + 海盐 / 甜咸暴击</p>
+      <span class="price">¥32</span>
+    </div>
+    <div class="menu-item">
+      <h3>暗 物 质</h3>
+      <p>活性炭 + 浓缩 + 燕麦奶 / 黑到看不见底</p>
+      <span class="price">¥35</span>
+    </div>
+  </div>
+</section>
+
+<section id="origin">
+  <div class="origin-text">
+    <h2>豆子<span>说</span>了算</h2>
+    <p>我们的豆子来自云南保山高黎贡山海拔 1400 米以上产区——不跟你吹埃塞俄比亚的古老传说，不跟你扯哥伦比亚的火山土壤。云南的咖啡农用二十年的经验告诉我们：好豆子不需要故事，好豆子只需要好烘焙。</p>
+    <p>从生豆进仓到出杯，全程不超过 72 小时。没有库存，没有预磨，没有废话。</p>
+  </div>
+  <div class="origin-visual">
+    <div class="stamp">云南</div>
+  </div>
+</section>
+
+<section class="cta" id="cta">
+  <h2>不点外卖<br><em>来找我们</em></h2>
+  <a href="#" class="cta-btn">📍 上海永嘉路 309 号</a>
+</section>
+
+<footer>
+  <span>BRUTAL BREW © 2025</span>
+  <span>没有微信 / 没有小红书 / 没有客服</span>
+</footer>
+
+</body>
+</html>
