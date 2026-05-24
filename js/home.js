@@ -58,23 +58,9 @@ const Home = {
         const contactsGrid = document.querySelector('.contacts-grid');
         if (!contactsGrid) return;
         
-        // 静态联系方式（微信和 GitHub）
-        const contacts = [
-            {
-                type: 'wechat',
-                icon: '💬',
-                label: '微信',
-                value: '-225588006991',
-                action: 'copy'
-            },
-            {
-                type: 'github',
-                icon: '💻',
-                label: 'GitHub',
-                value: 'https://github.com/dgljw',
-                action: 'open'
-            }
-        ];
+        // 从配置或存储中获取联系方式
+        const stored = Storage.getContacts();
+        const contacts = stored.length > 0 ? stored : CONFIG.DEFAULT_CONTACTS;
         
         contactsGrid.innerHTML = '';
         contacts.forEach(contact => {
