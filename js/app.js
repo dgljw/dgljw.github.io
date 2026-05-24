@@ -59,6 +59,8 @@
             const current = document.documentElement.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
+            // 强制应用主题到 html 元素，确保背景色立即更新
+            document.documentElement.style.backgroundColor = '';
             const icon = document.querySelector('.theme-icon');
             if (icon) icon.textContent = next === 'dark' ? '☀️' : '🌙';
             Storage.updateSetting('theme', next);
