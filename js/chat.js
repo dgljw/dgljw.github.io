@@ -141,6 +141,8 @@ const Chat = {
     async callChatAPI(userContent) {
         const context = Memory.buildContext();
         const recentMessages = Memory.getChatContext();
+        const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const timeContext = { role: 'system', content: `当前时间：${now}。请牢记这个时间信息。` };
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -151,7 +153,7 @@ const Chat = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [context, ...recentMessages, { role: 'user', content: userContent }],
+                    messages: [timeContext, context, ...recentMessages, { role: 'user', content: userContent }],
                     model: CONFIG.MODEL,
                     temperature: CONFIG.TEMPERATURE,
                     max_tokens: CONFIG.MAX_TOKENS,
@@ -160,6 +162,30 @@ const Chat = {
             });
         } finally {
             clearTimeout(timeoutId);
+        }
+    },
+
+    /** 表情搜索 */
+    async searchEmoji(keyword) {
+        try {
+            const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(keyword)}&count=1`);
+            const data = await res.json();
+            if (data.images?.length) {
+                const aiMsg = { role: 'assistant', content: `搜索"${keyword}"的表情`, image: data.images[0], timestamp: Date.now() };
+                this.appendMessage(aiMsg);
+                Storage.addChatMessage(aiMsg);
+                this.chatHistory = Storage.getChatHistory();
+            } else {
+                const aiMsg = { role: 'assistant', content: `未找到"${keyword}"的表情包`, timestamp: Date.now() };
+                this.appendMessage(aiMsg);
+                Storage.addChatMessage(aiMsg);
+                this.chatHistory = Storage.getChatHistory();
+            }
+        } catch {
+            const aiMsg = { role: 'assistant', content: '表情搜索失败，请稍后重试', timestamp: Date.now() };
+            this.appendMessage(aiMsg);
+            Storage.addChatMessage(aiMsg);
+            this.chatHistory = Storage.getChatHistory();
         }
     },
 
@@ -457,7 +483,7 @@ const Chat = {
         }
     },
 
-    /** 表情搜索 - 增强版，支持自动匹配和真人式输出 */
+    /** 表情搜索 - 增强版，支持自动匹配 */
     async searchEmoji(keyword, auto = false) {
         try {
             // 如果是自动匹配，先获取关键词
@@ -472,13 +498,10 @@ const Chat = {
             const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(searchKeyword)}&count=1`);
             const data = await res.json();
             if (data.images?.length) {
-                // 只取第一张图片
-                const url = data.images[0];
-                // 真人式输出：直接显示图片，不显示搜索提示
-                const html = `<div class="emoji-single"><img src="${url}" alt="${searchKeyword}表情" loading="lazy" onclick="window.open('${url}', '_blank')"></div>`;
                 const aiMsg = { 
                     role: 'assistant', 
-                    content: html,
+                    content: `${auto ? '根据聊天内容推荐' : '搜索'} "${searchKeyword}" 的表情`, 
+                    image: data.images[0],
                     timestamp: Date.now() 
                 };
                 this.appendMessage(aiMsg);
@@ -486,7 +509,7 @@ const Chat = {
                 this.chatHistory = Storage.getChatHistory();
             } else {
                 if (!auto) {
-                    const aiMsg = { role: 'assistant', content: `没找到"${searchKeyword}"相关的表情包呢~`, timestamp: Date.now() };
+                    const aiMsg = { role: 'assistant', content: `未找到"${searchKeyword}"的表情包`, timestamp: Date.now() };
                     this.appendMessage(aiMsg);
                     Storage.addChatMessage(aiMsg);
                     this.chatHistory = Storage.getChatHistory();
