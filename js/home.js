@@ -74,25 +74,30 @@ const Home = {
                     <h3>${contact.label}</h3>
                     <p class="contact-value">${contact.value}</p>
                 </div>
-                <button class="contact-action" data-action="${contact.action}">
+                <button class="contact-action" data-action="${contact.action}" data-value="${contact.value}">
                     ${contact.action === 'copy' ? '复制' : '打开'}
                 </button>
             `;
             
-            const actionBtn = card.querySelector('.contact-action');
-            actionBtn.onclick = (e) => {
-                e.stopPropagation();
-                if (contact.action === 'copy') {
-                    copyToClipboard(contact.value).then(success => {
-                        showToast(success ? '已复制到剪贴板' : '复制失败', success ? 'success' : 'error');
-                    });
-                } else {
-                    openLink(contact.value);
-                }
-            };
-            
             contactsGrid.appendChild(card);
         });
+
+        // 事件委托：在 contactsGrid 上统一处理
+        contactsGrid.onclick = (e) => {
+            const btn = e.target.closest('.contact-action');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const action = btn.dataset.action;
+            const value = btn.dataset.value;
+            if (action === 'copy') {
+                copyToClipboard(value).then(success => {
+                    showToast(success ? '已复制到剪贴板' : '复制失败', success ? 'success' : 'error');
+                });
+            } else if (action === 'open') {
+                openLink(value);
+            }
+        };
     },
     
     /**
