@@ -2,6 +2,13 @@
 
 const Storage = {
     /**
+     * 初始化默认值
+     */
+    initDefaults() {
+        // 确保默认值已写入 localStorage（各 get 方法已有 fallback，此处预留后续扩展）
+    },
+
+    /**
      * 获取值
      */
     get(key, defaultValue = null) {
