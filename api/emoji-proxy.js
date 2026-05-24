@@ -5,18 +5,18 @@ const YOUXIANG_URL = 'https://api.yxapi.cn/api/douyin/emoji';
 const TOER2_URL = 'https://api.toer2.com/api/emoji/search';
 const BAIXIAO_URL = 'https://cn.apihz.cn/api/img/apihzbqbbaidu.php';
 
-module.exports = async function handler(req) {
-    if (req.method === 'OPTIONS') {
-        return new Response(null, {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            }
-        });
-    }
+export async function OPTIONS() {
+    return new Response(null, {
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        }
+    });
+}
 
-    const url = new URL(req.url);
+export async function GET(request) {
+    const url = new URL(request.url);
     const keyword = url.searchParams.get('keyword') || '';
     const count = parseInt(url.searchParams.get('count') || '8');
 
