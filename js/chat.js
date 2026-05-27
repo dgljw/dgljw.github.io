@@ -5,6 +5,7 @@ const Chat = {
     webSearchEnabled: true,
     chatHistory: [],
     pendingMessage: null,
+    // trigger vercel deploy
 
     /** 初始化 */
     init() {
