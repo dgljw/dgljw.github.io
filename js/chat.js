@@ -1,12 +1,5 @@
 // AI 聊天逻辑
 
-const Chat = {
-    isProcessing: false,
-    webSearchEnabled: true,
-    chatHistory: [],
-    pendingMessage: null,
-    // trigger vercel deploy
-
 /** 客户端联网搜索 - 浏览器端执行，绕过服务器 IP 限制 */
 async function searchWebClient(query) {
     // 方案1: DuckDuckGo HTML（无需 CORS 代理，浏览器可直连）
@@ -65,6 +58,13 @@ async function searchWebClient(query) {
 
     return null;
 }
+
+const Chat = {
+    isProcessing: false,
+    webSearchEnabled: true,
+    chatHistory: [],
+    pendingMessage: null,
+    // trigger vercel deploy
 
     /** 初始化 */
     init() {
