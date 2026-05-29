@@ -460,6 +460,72 @@ body {
     color: var(--text-muted);
 }
 
+/* 公告栏 */
+.announcement-section { width: 100%; }
+
+.announcement-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
+    transition: all var(--transition);
+    box-shadow: var(--shadow);
+}
+
+.announcement-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
+}
+
+.announcement-header {
+    padding: 1.25rem 1.5rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.announcement-pin {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    animation: pinBounce 2s ease-in-out infinite;
+}
+
+@keyframes pinBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.announcement-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.02em;
+}
+
+.announcement-content {
+    padding: 0 1.5rem 1.25rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.announcement-image {
+    width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    display: block;
+    border-top: 1px solid var(--border-light);
+}
+
+.announcement-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
 /* 博客占位 */
 .blog-section { width: 100%; }
 
