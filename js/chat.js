@@ -7,6 +7,65 @@ const Chat = {
     pendingMessage: null,
     // trigger vercel deploy
 
+/** 客户端联网搜索 - 浏览器端执行，绕过服务器 IP 限制 */
+async function searchWebClient(query) {
+    // 方案1: DuckDuckGo HTML（无需 CORS 代理，浏览器可直连）
+    try {
+        const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(6000)
+        });
+        if (!res.ok) throw new Error('DDG failed');
+        const html = await res.text();
+        const results = [];
+        const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+        const snippetRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+        const links = [...html.matchAll(linkRe)];
+        const snippets = [...html.matchAll(snippetRe)];
+        for (let i = 0; i < Math.min(links.length, snippets.length, 5); i++) {
+            const title = links[i][2].replace(/<\/?[^>]+>/g, '').trim();
+            const url = links[i][1].replace(/\/\/duckduckgo\.com\/l\/\?uddg=/, '').replace(/&rut=.*$/, '');
+            const finalUrl = url.startsWith('http') ? url : decodeURIComponent(url);
+            const snippet = snippets[i][1].replace(/<\/?[^>]+>/g, '').trim();
+            if (title && snippet) {
+                results.push(`[${title}](${finalUrl})\n${snippet}`);
+            }
+        }
+        if (results.length > 0) return results.join('\n\n');
+    } catch (e) {
+        console.log('DDG search failed:', e.message);
+    }
+
+    // 方案2: 通过 CORS 代理访问 Bing
+    try {
+        const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=zh-cn`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(bingUrl)}`;
+        const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error('Proxy failed');
+        const html = await res.text();
+        const results = [];
+        const blockRe = /<li class="b_algo">([\s\S]*?)<\/li>/gi;
+        let block;
+        while ((block = blockRe.exec(html)) && results.length < 5) {
+            const b = block[1];
+            const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+            const snippetMatch = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+            if (linkMatch && snippetMatch) {
+                const title = linkMatch[2].replace(/<\/?[^>]+>/g, '').trim();
+                const snippet = snippetMatch[1].replace(/<\/?[^>]+>/g, '').trim();
+                if (title && snippet.length > 10) {
+                    results.push(`[${title}](${linkMatch[1]})\n${snippet}`);
+                }
+            }
+        }
+        if (results.length > 0) return results.join('\n\n');
+    } catch (e) {
+        console.log('Bing proxy search failed:', e.message);
+    }
+
+    return null;
+}
+
     /** 初始化 */
     init() {
         this.webSearchEnabled = Storage.getSettings().webSearch;
@@ -145,6 +204,21 @@ const Chat = {
         const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
         const timeContext = { role: 'system', content: `当前时间：${now}。请牢记这个时间信息。` };
 
+        // 客户端联网搜索
+        let searchContext = null;
+        if (this.webSearchEnabled) {
+            try {
+                searchContext = await searchWebClient(userContent);
+            } catch {}
+        }
+
+        const messages = [timeContext];
+        if (searchContext) {
+            const today = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+            messages.push({ role: 'system', content: `联网搜索结果（当前日期：${today}）：\n${searchContext}\n\n请严格基于以上搜索结果回答。如果搜索结果与你的训练数据冲突，以搜索结果为准。` });
+        }
+        messages.push(context, ...recentMessages, { role: 'user', content: userContent });
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -154,11 +228,10 @@ const Chat = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [timeContext, context, ...recentMessages, { role: 'user', content: userContent }],
+                    messages,
                     model: CONFIG.MODEL,
                     temperature: CONFIG.TEMPERATURE,
-                    max_tokens: CONFIG.MAX_TOKENS,
-                    web_search: this.webSearchEnabled
+                    max_tokens: CONFIG.MAX_TOKENS
                 })
             });
         } finally {
