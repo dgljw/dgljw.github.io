@@ -145,39 +145,59 @@ function generateId() {
 }
 
 /**
- * 复制文本到剪贴板（移动端兼容 - 优先使用 Clipboard API 降级 execCommand）
+ * 复制文本到剪贴板
  */
 async function copyToClipboard(text) {
+    // 优先使用 textarea 方案，移动端兼容性最好
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    textarea.setAttribute('readonly', '');
+    document.body.appendChild(textarea);
+    // iOS 兼容
+    textarea.contentEditable = 'true';
+    textarea.readOnly = true;
+    const range = document.createRange();
+    range.selectNodeContents(textarea);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    textarea.setSelectionRange(0, 999999);
     try {
-        // 优先使用 Clipboard API
-        await navigator.clipboard.writeText(text);
+        document.execCommand('copy');
         return true;
     } catch {
-        // 降级方案：execCommand
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.left = '0';
-        ta.style.top = '0';
-        ta.style.opacity = '0';
-        ta.style.pointerEvents = 'none';
-        ta.setAttribute('readonly', '');
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        ta.setSelectionRange(0, 99999);
-        const ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-        return ok;
+        // 降级到 Clipboard API
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            return false;
+        }
+    } finally {
+        document.body.removeChild(textarea);
     }
 }
 
 /**
- * 打开链接（移动端兼容 - 直接当前页跳转，移动端弹窗被拦截无法新标签）
+ * 打开链接（移动端兼容）
  */
 function openLink(url) {
     const fullUrl = (url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`;
-    window.location.href = fullUrl;
+    // 优先用 window.open（移动端不会被弹窗拦截器阻止）
+    const w = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    // 降级：部分环境 window.open 返回 null
+    if (!w) {
+        const a = document.createElement('a');
+        a.href = fullUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 }
 
 /**
