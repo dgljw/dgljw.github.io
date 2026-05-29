@@ -38,7 +38,8 @@ const CONFIG = {
         AI_NAME: 'ai_name',
         SYSTEM_PROMPT: 'system_prompt',
         CONTACTS: 'user_contacts',
-        MOTTO: 'user_motto'
+        MOTTO: 'user_motto',
+        ANNOUNCEMENT: 'announcement_data'
     },
     
     // 默认设置
