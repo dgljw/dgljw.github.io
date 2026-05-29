@@ -26,7 +26,7 @@ export async function OPTIONS() {
 
 export async function GET(request) {
     const url = new URL(request.url);
-    const keyword = url.searchParams.get('keyword') || '';
+    const keyword = (url.searchParams.get('keyword') || '') + ' 表情包';
     const count = parseInt(url.searchParams.get('count') || '1');
 
     if (!keyword) {
