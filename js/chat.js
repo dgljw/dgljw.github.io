@@ -2,9 +2,77 @@
 
 /** 客户端联网搜索 - 浏览器端执行，绕过服务器 IP 限制 */
 async function searchWebClient(query) {
-    // 方案1: DuckDuckGo HTML（无需 CORS 代理，浏览器可直连）
+    // 检测是否为新闻类查询
+    const isNews = /新闻|最新|今日|热搜|头条|事件|报道|爆料|发生了什么|出什么事|现在|目前|当前/.test(query);
+    
+    // 方案1: 通过 codetabs CORS 代理访问 Bing（最稳定）
     try {
-        const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+        const baseUrl = isNews ? 'https://www.bing.com/news/search' : 'https://www.bing.com/search';
+        const params = new URLSearchParams({
+            q: query,
+            setlang: 'zh-cn',
+            cc: 'cn'
+        });
+        if (isNews) {
+            params.set('qft', 'interval="7"'); // 最近7天
+        } else {
+            params.set('qft', 'filterui:age-lt1440'); // 最近24小时
+        }
+        
+        const targetUrl = `${baseUrl}?${params.toString()}`;
+        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+        
+        const res = await fetch(proxyUrl, { 
+            signal: AbortSignal.timeout(10000),
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        if (!res.ok) throw new Error(`Proxy failed: ${res.status}`);
+        
+        const html = await res.text();
+        const results = [];
+        
+        if (isNews) {
+            // 解析 Bing 新闻结果
+            const titleRegex = /<a[^>]*class="title"[^>]*href="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+            const snippetRegex = /<div[^>]*class="snippet"[^>]*>([\s\S]*?)<\/div>/gi;
+            
+            const titles = [...html.matchAll(titleRegex)];
+            const snippets = [...html.matchAll(snippetRegex)];
+            
+            for (let i = 0; i < Math.min(titles.length, snippets.length, 5); i++) {
+                const title = titles[i][2].replace(/<\/?[^>]+>/g, '').trim();
+                const url = titles[i][1];
+                const snippet = snippets[i][1].replace(/<\/?[^>]+>/g, '').trim();
+                if (title && url && snippet) {
+                    results.push(`[${title}](${url})\n${snippet}`);
+                }
+            }
+        } else {
+            // 解析普通 Bing 搜索结果
+            const blockRegex = /<li class="b_algo"[^>]*>([\s\S]*?)<\/li>/gi;
+            let block;
+            while ((block = blockRegex.exec(html)) && results.length < 5) {
+                const b = block[1];
+                const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+                const snippetMatch = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+                if (linkMatch && snippetMatch) {
+                    const title = linkMatch[2].replace(/<\/?[^>]+>/g, '').trim();
+                    const snippet = snippetMatch[1].replace(/<\/?[^>]+>/g, '').trim();
+                    if (title && snippet.length > 10) {
+                        results.push(`[${title}](${linkMatch[1]})\n${snippet}`);
+                    }
+                }
+            }
+        }
+        
+        if (results.length > 0) return results.join('\n\n');
+    } catch (e) {
+        console.log('Bing via codetabs failed:', e.message);
+    }
+    
+    // 方案2: DuckDuckGo HTML 备用
+    try {
+        const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=cn-zh`, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
             signal: AbortSignal.timeout(6000)
         });
@@ -27,33 +95,6 @@ async function searchWebClient(query) {
         if (results.length > 0) return results.join('\n\n');
     } catch (e) {
         console.log('DDG search failed:', e.message);
-    }
-
-    // 方案2: 通过 CORS 代理访问 Bing
-    try {
-        const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=zh-cn`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(bingUrl)}`;
-        const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) throw new Error('Proxy failed');
-        const html = await res.text();
-        const results = [];
-        const blockRe = /<li class="b_algo">([\s\S]*?)<\/li>/gi;
-        let block;
-        while ((block = blockRe.exec(html)) && results.length < 5) {
-            const b = block[1];
-            const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-            const snippetMatch = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-            if (linkMatch && snippetMatch) {
-                const title = linkMatch[2].replace(/<\/?[^>]+>/g, '').trim();
-                const snippet = snippetMatch[1].replace(/<\/?[^>]+>/g, '').trim();
-                if (title && snippet.length > 10) {
-                    results.push(`[${title}](${linkMatch[1]})\n${snippet}`);
-                }
-            }
-        }
-        if (results.length > 0) return results.join('\n\n');
-    } catch (e) {
-        console.log('Bing proxy search failed:', e.message);
     }
 
     return null;
