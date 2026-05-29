@@ -2,33 +2,51 @@
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
 async function searchDuckDuckGo(query) {
-    // 使用 SearXNG 公共实例（免费、JSON API、无需 Key）
-    const instances = [
-        'https://search.sapti.me',
-        'https://searx.be',
-        'https://search.bus-hit.me',
-        'https://searx.tiekoetter.com',
-    ];
-    
-    for (const base of instances) {
-        try {
-            const res = await fetch(`${base}/search?format=json&q=${encodeURIComponent(query)}`, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-                signal: AbortSignal.timeout(8000)
-            });
-            if (!res.ok) continue;
+    // 方案1: DuckDuckGo Instant Answer API（免费、JSON、可靠）
+    try {
+        const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`, {
+            signal: AbortSignal.timeout(6000)
+        });
+        if (res.ok) {
             const data = await res.json();
-            if (!data.results || data.results.length === 0) continue;
+            const results = [];
             
-            const results = data.results.slice(0, 5).map(r => {
-                const title = (r.title || '').replace(/<\/?[^>]+>/g, '').trim();
-                const snippet = (r.content || r.snippet || '').replace(/<\/?[^>]+>/g, '').trim();
-                return `[${title}](${r.url})\n${snippet}`;
+            // Abstract: 百科摘要
+            if (data.AbstractText && data.AbstractText.length > 10) {
+                results.push(`[${data.Heading || '摘要'}](${data.AbstractURL || ''})\n${data.AbstractText}`);
+            }
+            
+            // RelatedTopics: 相关条目
+            (data.RelatedTopics || []).forEach(t => {
+                if (t.Text && t.FirstURL && !results.find(r => r.includes(t.FirstURL))) {
+                    results.push(`[${t.Text.split(' - ')[0]}](${t.FirstURL})\n${t.Text}`);
+                }
             });
             
-            return results.join('\n\n');
-        } catch { continue; }
-    }
+            if (results.length > 0) return results.slice(0, 5).join('\n\n');
+        }
+    } catch {}
+    
+    // 方案2: lite.duckduckgo.com 页面抓取（兜底）
+    try {
+        const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: AbortSignal.timeout(8000)
+        });
+        if (!res.ok) return null;
+        const html = await res.text();
+        const results = [];
+        // lite 版: 每个结果 = <a rel="nofollow" href="URL">标题</a> + <span class="result-snippet">描述</span>
+        const re = /<a[^>]*rel="nofollow"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>[\s\S]*?<span[^>]*class="result-snippet"[^>]*>([^<]*)</gi;
+        let m;
+        while ((m = re.exec(html)) && results.length < 5) {
+            const title = m[2].trim();
+            const snippet = m[3].trim();
+            if (title && snippet) results.push(`[${title}](${m[1]})\n${snippet}`);
+        }
+        if (results.length > 0) return results.join('\n\n');
+    } catch {}
+    
     return null;
 }
 
