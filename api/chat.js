@@ -1,14 +1,34 @@
 // 聊天 API - Vercel Serverless (fetch-style API)
-import { search } from 'duck-duck-scrape';
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
 async function searchDuckDuckGo(query) {
     try {
-        const results = await search(query);
-        if (!results.results?.length) return null;
-        return results.results.slice(0, 5).map(r =>
-            `[${r.title}](${r.url})\n${r.description}`
-        ).join('\n\n');
+        const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DuckDuckGoBot/1.0)' }
+        });
+        if (!res.ok) return null;
+        const html = await res.text();
+        // 解析 lite 版搜索结果：每个结果由标题链接 + 描述组成
+        const results = [];
+        const linkRegex = /<a[^>]*rel="nofollow"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi;
+        const snippetRegex = /<td class="result-snippet"[^>]*>([^<]+)/gi;
+        
+        let match;
+        const links = [];
+        while ((match = linkRegex.exec(html)) !== null) {
+            links.push({ url: match[1], title: match[2].replace(/<\/?[^>]+>/g, '') });
+        }
+        
+        const snippets = [];
+        while ((match = snippetRegex.exec(html)) !== null) {
+            snippets.push(match[1]);
+        }
+        
+        for (let i = 0; i < Math.min(links.length, snippets.length, 5); i++) {
+            results.push(`[${links[i].title}](${links[i].url})\n${snippets[i]}`);
+        }
+        
+        return results.length > 0 ? results.join('\n\n') : null;
     } catch { return null; }
 }
 
