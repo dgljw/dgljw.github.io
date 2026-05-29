@@ -1,52 +1,74 @@
 // 聊天 API - Vercel Serverless (fetch-style API)
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
-async function searchDuckDuckGo(query) {
-    // 方案1: DuckDuckGo Instant Answer API（免费、JSON、可靠）
+async function searchWeb(query) {
+    // 方案1: Google 搜索 HTML 解析（Vercel 美国 IP 通常可达）
+    try {
+        const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+        const res = await fetch(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=zh-CN&num=10`, {
+            headers: { 'User-Agent': ua, 'Accept-Language': 'zh-CN,zh;q=0.9' },
+            signal: AbortSignal.timeout(6000)
+        });
+        if (!res.ok) throw new Error('Google unreachable');
+        const html = await res.text();
+        
+        // Google 搜索结果格式: <h3>标题</h3> ... <a href="URL"> ... 摘要片段
+        const results = [];
+        const blockRe = /<div[^>]*class="[^"]*g[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi;
+        const titleRe = /<h3[^>]*>([\s\S]*?)<\/h3>/i;
+        const linkRe = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi;
+        const snippetRe = /<span[^>]*class="[^"]*st[^"]*"[^>]*>([\s\S]*?)<\/span>/i;
+
+        // 更简单的方式：直接匹配所有搜索结果的标题和链接
+        const re = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>\s*(?:<[^>]+>)*([^<]{5,100})(?:<[^>]+>)*\s*<\/a>\s*(?:<[^>]+>)*\s*<[^>]*>\s*([^<]{20,300})/gi;
+        let m;
+        while ((m = re.exec(html)) && results.length < 5) {
+            const url = m[1];
+            const title = m[2].replace(/<\/?[^>]+>/g, '').trim();
+            const snippet = m[3].replace(/<\/?[^>]+>/g, '').trim();
+            if (!url.includes('google.com') && title && snippet && !results.find(r => r.includes(url))) {
+                results.push(`[${title}](${url})\n${snippet}`);
+            }
+        }
+
+        if (results.length > 0) return results.join('\n\n');
+    } catch {}
+
+    // 方案2: DuckDuckGo Instant Answer API（免费 JSON）
     try {
         const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`, {
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(5000)
         });
         if (res.ok) {
             const data = await res.json();
             const results = [];
-            
-            // Abstract: 百科摘要
-            if (data.AbstractText && data.AbstractText.length > 10) {
+            if (data.AbstractText?.length > 10) {
                 results.push(`[${data.Heading || '摘要'}](${data.AbstractURL || ''})\n${data.AbstractText}`);
             }
-            
-            // RelatedTopics: 相关条目
             (data.RelatedTopics || []).forEach(t => {
-                if (t.Text && t.FirstURL && !results.find(r => r.includes(t.FirstURL))) {
+                if (t.Text && t.FirstURL && !results.find(r => r.includes(t.FirstURL)))
                     results.push(`[${t.Text.split(' - ')[0]}](${t.FirstURL})\n${t.Text}`);
-                }
             });
-            
             if (results.length > 0) return results.slice(0, 5).join('\n\n');
         }
     } catch {}
-    
-    // 方案2: lite.duckduckgo.com 页面抓取（兜底）
+
+    // 方案3: Wikipedia 搜索 API（最稳兜底）
     try {
-        const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            signal: AbortSignal.timeout(8000)
+        const res = await fetch(`https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`, {
+            signal: AbortSignal.timeout(5000)
         });
-        if (!res.ok) return null;
-        const html = await res.text();
-        const results = [];
-        // lite 版: 每个结果 = <a rel="nofollow" href="URL">标题</a> + <span class="result-snippet">描述</span>
-        const re = /<a[^>]*rel="nofollow"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>[\s\S]*?<span[^>]*class="result-snippet"[^>]*>([^<]*)</gi;
-        let m;
-        while ((m = re.exec(html)) && results.length < 5) {
-            const title = m[2].trim();
-            const snippet = m[3].trim();
-            if (title && snippet) results.push(`[${title}](${m[1]})\n${snippet}`);
+        if (res.ok) {
+            const data = await res.json();
+            const results = (data.query?.search || []).map(r => {
+                const title = r.title.replace(/<\/?[^>]+>/g, '');
+                const snippet = r.snippet.replace(/<\/?[^>]+>/g, '');
+                return `[${title}](https://zh.wikipedia.org/wiki/${encodeURIComponent(r.title)})\n${snippet}`;
+            });
+            if (results.length > 0) return results.join('\n\n');
         }
-        if (results.length > 0) return results.join('\n\n');
     } catch {}
-    
+
     return null;
 }
 
@@ -81,7 +103,7 @@ export async function POST(request) {
 
         let searchResult = null;
         if (web_search && userContent) {
-            searchResult = await searchDuckDuckGo(userContent);
+            searchResult = await searchWeb(userContent);
             console.log('Web search enabled, result:', searchResult ? 'found' : 'none');
         } else {
             console.log('Web search disabled or no user content');
