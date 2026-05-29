@@ -2,34 +2,34 @@
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
 async function searchDuckDuckGo(query) {
-    try {
-        const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DuckDuckGoBot/1.0)' }
-        });
-        if (!res.ok) return null;
-        const html = await res.text();
-        // 解析 lite 版搜索结果：每个结果由标题链接 + 描述组成
-        const results = [];
-        const linkRegex = /<a[^>]*rel="nofollow"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/gi;
-        const snippetRegex = /<td class="result-snippet"[^>]*>([^<]+)/gi;
-        
-        let match;
-        const links = [];
-        while ((match = linkRegex.exec(html)) !== null) {
-            links.push({ url: match[1], title: match[2].replace(/<\/?[^>]+>/g, '') });
-        }
-        
-        const snippets = [];
-        while ((match = snippetRegex.exec(html)) !== null) {
-            snippets.push(match[1]);
-        }
-        
-        for (let i = 0; i < Math.min(links.length, snippets.length, 5); i++) {
-            results.push(`[${links[i].title}](${links[i].url})\n${snippets[i]}`);
-        }
-        
-        return results.length > 0 ? results.join('\n\n') : null;
-    } catch { return null; }
+    // 使用 SearXNG 公共实例（免费、JSON API、无需 Key）
+    const instances = [
+        'https://search.sapti.me',
+        'https://searx.be',
+        'https://search.bus-hit.me',
+        'https://searx.tiekoetter.com',
+    ];
+    
+    for (const base of instances) {
+        try {
+            const res = await fetch(`${base}/search?format=json&q=${encodeURIComponent(query)}`, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+                signal: AbortSignal.timeout(8000)
+            });
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (!data.results || data.results.length === 0) continue;
+            
+            const results = data.results.slice(0, 5).map(r => {
+                const title = (r.title || '').replace(/<\/?[^>]+>/g, '').trim();
+                const snippet = (r.content || r.snippet || '').replace(/<\/?[^>]+>/g, '').trim();
+                return `[${title}](${r.url})\n${snippet}`;
+            });
+            
+            return results.join('\n\n');
+        } catch { continue; }
+    }
+    return null;
 }
 
 export async function OPTIONS() {
