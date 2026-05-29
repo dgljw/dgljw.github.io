@@ -1,12 +1,12 @@
 // 配置文件
 const CONFIG = {
     // API 配置
-    API_BASE: 'https://dgljw-github-io.vercel.app/api',
-    CHAT_API: 'https://dgljw-github-io.vercel.app/api/chat',
-    SUMMARIZE_API: 'https://dgljw-github-io.vercel.app/api/summarize',
-    EXTRACT_API: 'https://dgljw-github-io.vercel.app/api/extract',
-    EMOJI_API: 'https://dgljw-github-io.vercel.app/api/emoji-proxy',
-    VISION_API: 'https://dgljw-github-io.vercel.app/api/vision',
+    API_BASE: 'https://jianguo18.top/api',
+    CHAT_API: 'https://jianguo18.top/api/chat',
+    SUMMARIZE_API: 'https://jianguo18.top/api/summarize',
+    EXTRACT_API: 'https://jianguo18.top/api/extract',
+    EMOJI_API: 'https://jianguo18.top/api/emoji-proxy',
+    VISION_API: 'https://jianguo18.top/api/vision',
     
     // DeepSeek 模型配置
     MODEL: 'deepseek-chat',
