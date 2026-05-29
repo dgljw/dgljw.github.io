@@ -5,6 +5,7 @@ const Chat = {
     webSearchEnabled: true,
     chatHistory: [],
     pendingMessage: null,
+    // trigger vercel deploy
 
     /** 初始化 */
     init() {
@@ -141,13 +142,8 @@ const Chat = {
     async callChatAPI(userContent) {
         const context = Memory.buildContext();
         const recentMessages = Memory.getChatContext();
-        
-        // 注入当前时间信息
-        const now = new Date();
-        const timeInfo = `\n\n当前时间：${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} （星期${['日','一','二','三','四','五','六'][now.getDay()]}）`;
-        if (context.content) {
-            context.content += timeInfo;
-        }
+        const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const timeContext = { role: 'system', content: `当前时间：${now}。请牢记这个时间信息。` };
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -158,7 +154,7 @@ const Chat = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [context, ...recentMessages, { role: 'user', content: userContent }],
+                    messages: [timeContext, context, ...recentMessages, { role: 'user', content: userContent }],
                     model: CONFIG.MODEL,
                     temperature: CONFIG.TEMPERATURE,
                     max_tokens: CONFIG.MAX_TOKENS,
@@ -176,18 +172,12 @@ const Chat = {
             const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(keyword)}&count=1`);
             const data = await res.json();
             if (data.images?.length) {
-                const url = data.images[0];
-                const aiMsg = { 
-                    role: 'assistant', 
-                    content: `[表情包](${url})`, 
-                    timestamp: Date.now(),
-                    image: url 
-                };
+                const aiMsg = { role: 'assistant', content: `搜索"${keyword}"的表情`, image: data.images[0], timestamp: Date.now() };
                 this.appendMessage(aiMsg);
                 Storage.addChatMessage(aiMsg);
                 this.chatHistory = Storage.getChatHistory();
             } else {
-                const aiMsg = { role: 'assistant', content: `没找到"${keyword}"的表情`, timestamp: Date.now() };
+                const aiMsg = { role: 'assistant', content: `未找到"${keyword}"的表情包`, timestamp: Date.now() };
                 this.appendMessage(aiMsg);
                 Storage.addChatMessage(aiMsg);
                 this.chatHistory = Storage.getChatHistory();
@@ -509,19 +499,18 @@ const Chat = {
             const res = await fetch(`${CONFIG.EMOJI_API}?keyword=${encodeURIComponent(searchKeyword)}&count=1`);
             const data = await res.json();
             if (data.images?.length) {
-                const url = data.images[0];
                 const aiMsg = { 
                     role: 'assistant', 
-                    content: `${auto ? '根据聊天内容推荐' : '搜索'} "${searchKeyword}" 的表情：\n[表情包](${url})`, 
-                    timestamp: Date.now(),
-                    image: url 
+                    content: auto ? '' : `搜索 "${searchKeyword}" 的表情`, 
+                    image: data.images[0],
+                    timestamp: Date.now() 
                 };
                 this.appendMessage(aiMsg);
                 Storage.addChatMessage(aiMsg);
                 this.chatHistory = Storage.getChatHistory();
             } else {
                 if (!auto) {
-                    const aiMsg = { role: 'assistant', content: `没找到"${searchKeyword}"的表情`, timestamp: Date.now() };
+                    const aiMsg = { role: 'assistant', content: `未找到"${searchKeyword}"的表情包`, timestamp: Date.now() };
                     this.appendMessage(aiMsg);
                     Storage.addChatMessage(aiMsg);
                     this.chatHistory = Storage.getChatHistory();
