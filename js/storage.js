@@ -261,6 +261,20 @@ const Storage = {
     },
 
     /**
+     * 获取公告数据（TXT 原文）
+     */
+    getAnnouncement() {
+        return this.get(CONFIG.STORAGE_KEYS.ANNOUNCEMENT, '');
+    },
+
+    /**
+     * 设置公告数据（TXT 原文）
+     */
+    setAnnouncement(text) {
+        return this.set(CONFIG.STORAGE_KEYS.ANNOUNCEMENT, text);
+    },
+
+    /**
      * 导出数据（用于备份）
      */
     exportData() {
@@ -272,7 +286,8 @@ const Storage = {
             settings: this.getSettings(),
             systemPrompt: this.getSystemPrompt(),
             contacts: this.getContacts(),
-            motto: this.getMotto()
+            motto: this.getMotto(),
+            announcement: this.getAnnouncement()
         };
         return JSON.stringify(data, null, 2);
     },
