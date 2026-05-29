@@ -2,16 +2,19 @@
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
 async function searchWeb(query) {
-    // Bing 搜索 HTML 解析（比 Google 对 Vercel IP 更友好）
+    const isNewsQuery = /新闻|最新|今日|热搜|头条|事件|报道|爆料|发生了什么|出什么事|现在|目前|当前/.test(query);
+
+    // Bing 搜索，新闻类加时间过滤（近7天），通用类近一周
     try {
-        const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=zh-cn`, {
+        const timeFilter = isNewsQuery ? '&tbs=qdr:d' : '&tbs=qdr:w';
+        const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=zh-cn${timeFilter}`;
+        const res = await fetch(searchUrl, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             signal: AbortSignal.timeout(6000)
         });
         if (!res.ok) throw new Error('Bing unreachable');
         const html = await res.text();
         const results = [];
-        // Bing 结果结构: <li class="b_algo"><h2><a href="URL">标题</a></h2><p>描述</p>
         const blockRe = /<li class="b_algo">([\s\S]*?)<\/li>/gi;
         let block;
         while ((block = blockRe.exec(html)) && results.length < 5) {
@@ -29,19 +32,21 @@ async function searchWeb(query) {
         if (results.length > 0) return results.join('\n\n');
     } catch {}
 
-    // Wikipedia 兜底
-    try {
-        const res = await fetch(`https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`, {
-            signal: AbortSignal.timeout(5000)
-        });
-        if (res.ok) {
-            const data = await res.json();
-            const results = (data.query?.search || []).map(r => {
-                return `[${r.title}](https://zh.wikipedia.org/wiki/${encodeURIComponent(r.title)})\n${r.snippet.replace(/<\/?[^>]+>/g, '')}`;
+    // Wikipedia 兜底（新闻类不查维基）
+    if (!isNewsQuery) {
+        try {
+            const res = await fetch(`https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`, {
+                signal: AbortSignal.timeout(5000)
             });
-            if (results.length > 0) return results.join('\n\n');
-        }
-    } catch {}
+            if (res.ok) {
+                const data = await res.json();
+                const results = (data.query?.search || []).map(r => {
+                    return `[${r.title}](https://zh.wikipedia.org/wiki/${encodeURIComponent(r.title)})\n${r.snippet.replace(/<\/?[^>]+>/g, '')}`;
+                });
+                if (results.length > 0) return results.join('\n\n');
+            }
+        } catch {}
+    }
 
     return null;
 }
@@ -85,7 +90,8 @@ export async function POST(request) {
 
         let finalSystemPrompt = systemContent;
         if (searchResult) {
-            finalSystemPrompt += `\n\n--- 联网搜索结果 ---\n以下是最新的搜索结果，请基于这些信息回答问题：\n${searchResult}\n---`;
+            const today = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+            finalSystemPrompt += `\n\n--- 联网搜索结果（当前日期：${today}）---\n以下是通过搜索引擎获取的实时信息，请严格基于这些信息回答。如果搜索结果与你的训练数据冲突，以搜索结果为准：\n${searchResult}\n---`;
         }
 
         const finalMessages = [
