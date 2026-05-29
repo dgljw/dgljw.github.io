@@ -20,7 +20,7 @@ async function searchWebClient(query) {
         }
         
         const targetUrl = `${baseUrl}?${params.toString()}`;
-        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
         
         const res = await fetch(proxyUrl, { 
             signal: AbortSignal.timeout(10000),
@@ -48,17 +48,30 @@ async function searchWebClient(query) {
                 }
             }
         } else {
-            // 解析普通 Bing 搜索结果
+            // 解析普通 Bing 搜索结果 - 改进：优先使用 aria-label 或 h2 作为标题
             const blockRegex = /<li class="b_algo"[^>]*>([\s\S]*?)<\/li>/gi;
             let block;
             while ((block = blockRegex.exec(html)) && results.length < 5) {
                 const b = block[1];
-                const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+                // 提取标题：优先 aria-label，其次 h2
+                let title = '';
+                const ariaMatch = b.match(/aria-label="([^"]+)"/);
+                if (ariaMatch) {
+                    title = ariaMatch[1];
+                } else {
+                    const h2Match = b.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+                    if (h2Match) {
+                        title = h2Match[1].replace(/<[^>]+>/g, '').trim();
+                    }
+                }
+                
+                // 提取链接
+                const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>/i);
                 const snippetMatch = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-                if (linkMatch && snippetMatch) {
-                    const title = linkMatch[2].replace(/<\/?[^>]+>/g, '').trim();
-                    const snippet = snippetMatch[1].replace(/<\/?[^>]+>/g, '').trim();
-                    if (title && snippet.length > 10) {
+                
+                if (title && linkMatch && snippetMatch) {
+                    const snippet = snippetMatch[1].replace(/<[^>]+>/g, '').trim();
+                    if (snippet.length > 10) {
                         results.push(`[${title}](${linkMatch[1]})\n${snippet}`);
                     }
                 }
@@ -67,7 +80,7 @@ async function searchWebClient(query) {
         
         if (results.length > 0) return results.join('\n\n');
     } catch (e) {
-        console.log('Bing via codetabs failed:', e.message);
+        console.log('Bing via allorigins failed:', e.message);
     }
     
     // 方案2: DuckDuckGo HTML 备用
