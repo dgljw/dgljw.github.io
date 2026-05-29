@@ -2,58 +2,34 @@
 const DEEPSEEK_BASE = 'https://api.deepseek.com/v1/chat/completions';
 
 async function searchWeb(query) {
-    // 方案1: Google 搜索 HTML 解析（Vercel 美国 IP 通常可达）
+    // Bing 搜索 HTML 解析（比 Google 对 Vercel IP 更友好）
     try {
-        const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-        const res = await fetch(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=zh-CN&num=10`, {
-            headers: { 'User-Agent': ua, 'Accept-Language': 'zh-CN,zh;q=0.9' },
+        const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=zh-cn`, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             signal: AbortSignal.timeout(6000)
         });
-        if (!res.ok) throw new Error('Google unreachable');
+        if (!res.ok) throw new Error('Bing unreachable');
         const html = await res.text();
-        
-        // Google 搜索结果格式: <h3>标题</h3> ... <a href="URL"> ... 摘要片段
         const results = [];
-        const blockRe = /<div[^>]*class="[^"]*g[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi;
-        const titleRe = /<h3[^>]*>([\s\S]*?)<\/h3>/i;
-        const linkRe = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi;
-        const snippetRe = /<span[^>]*class="[^"]*st[^"]*"[^>]*>([\s\S]*?)<\/span>/i;
-
-        // 更简单的方式：直接匹配所有搜索结果的标题和链接
-        const re = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>\s*(?:<[^>]+>)*([^<]{5,100})(?:<[^>]+>)*\s*<\/a>\s*(?:<[^>]+>)*\s*<[^>]*>\s*([^<]{20,300})/gi;
-        let m;
-        while ((m = re.exec(html)) && results.length < 5) {
-            const url = m[1];
-            const title = m[2].replace(/<\/?[^>]+>/g, '').trim();
-            const snippet = m[3].replace(/<\/?[^>]+>/g, '').trim();
-            if (!url.includes('google.com') && title && snippet && !results.find(r => r.includes(url))) {
-                results.push(`[${title}](${url})\n${snippet}`);
+        // Bing 结果结构: <li class="b_algo"><h2><a href="URL">标题</a></h2><p>描述</p>
+        const blockRe = /<li class="b_algo">([\s\S]*?)<\/li>/gi;
+        let block;
+        while ((block = blockRe.exec(html)) && results.length < 5) {
+            const b = block[1];
+            const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+            const snippetMatch = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+            if (linkMatch && snippetMatch) {
+                const title = linkMatch[2].replace(/<\/?[^>]+>/g, '').trim();
+                const snippet = snippetMatch[1].replace(/<\/?[^>]+>/g, '').trim();
+                if (title && snippet.length > 10) {
+                    results.push(`[${title}](${linkMatch[1]})\n${snippet}`);
+                }
             }
         }
-
         if (results.length > 0) return results.join('\n\n');
     } catch {}
 
-    // 方案2: DuckDuckGo Instant Answer API（免费 JSON）
-    try {
-        const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`, {
-            signal: AbortSignal.timeout(5000)
-        });
-        if (res.ok) {
-            const data = await res.json();
-            const results = [];
-            if (data.AbstractText?.length > 10) {
-                results.push(`[${data.Heading || '摘要'}](${data.AbstractURL || ''})\n${data.AbstractText}`);
-            }
-            (data.RelatedTopics || []).forEach(t => {
-                if (t.Text && t.FirstURL && !results.find(r => r.includes(t.FirstURL)))
-                    results.push(`[${t.Text.split(' - ')[0]}](${t.FirstURL})\n${t.Text}`);
-            });
-            if (results.length > 0) return results.slice(0, 5).join('\n\n');
-        }
-    } catch {}
-
-    // 方案3: Wikipedia 搜索 API（最稳兜底）
+    // Wikipedia 兜底
     try {
         const res = await fetch(`https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`, {
             signal: AbortSignal.timeout(5000)
@@ -61,9 +37,7 @@ async function searchWeb(query) {
         if (res.ok) {
             const data = await res.json();
             const results = (data.query?.search || []).map(r => {
-                const title = r.title.replace(/<\/?[^>]+>/g, '');
-                const snippet = r.snippet.replace(/<\/?[^>]+>/g, '');
-                return `[${title}](https://zh.wikipedia.org/wiki/${encodeURIComponent(r.title)})\n${snippet}`;
+                return `[${r.title}](https://zh.wikipedia.org/wiki/${encodeURIComponent(r.title)})\n${r.snippet.replace(/<\/?[^>]+>/g, '')}`;
             });
             if (results.length > 0) return results.join('\n\n');
         }
