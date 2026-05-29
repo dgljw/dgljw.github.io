@@ -501,7 +501,7 @@ const Chat = {
             if (data.images?.length) {
                 const aiMsg = { 
                     role: 'assistant', 
-                    content: `${auto ? '根据聊天内容推荐' : '搜索'} "${searchKeyword}" 的表情`, 
+                    content: auto ? '' : `搜索 "${searchKeyword}" 的表情`, 
                     image: data.images[0],
                     timestamp: Date.now() 
                 };
