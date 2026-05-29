@@ -621,6 +621,8 @@ body {
     border-radius: var(--radius);
     position: relative;
     animation: messageSlide 0.3s ease-out;
+    overflow: hidden;
+    word-break: break-word;
 }
 
 @keyframes messageSlide {
@@ -649,6 +651,17 @@ body {
     word-break: break-word;
 }
 
+.message-image {
+    max-width: 160px;
+    max-height: 160px;
+    width: auto;
+    height: auto;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.5rem;
+    display: block;
+    object-fit: contain;
+}
+
 .message-content ul { padding-left: 1.25rem; margin: 0.5rem 0; }
 
 .message-content code {
@@ -673,12 +686,13 @@ body {
 .message-content pre code { background: none; padding: 0; }
 
 .message-content img {
-    max-width: 200px;
-    max-height: 200px;
+    max-width: 160px;
+    max-height: 160px;
     border-radius: var(--radius-sm);
     margin: 0.5rem 0;
     cursor: pointer;
     transition: transform var(--transition);
+    object-fit: contain;
 }
 
 .message-content img:hover { transform: scale(1.05); }
@@ -1442,9 +1456,25 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .chat-container { height: calc(100vh - 130px); }
+    .chat-container { height: calc(100vh - 120px); border-radius: 0; border: none; }
 
-    .message-bubble { max-width: 90%; }
+    .message-bubble { max-width: 92%; padding: 0.6rem 0.8rem; }
+
+    .message-content { font-size: 0.88rem; }
+
+    .message-image { max-width: 140px; max-height: 140px; }
+
+    .message-content img { max-width: 140px; max-height: 140px; }
+
+    .input-container { padding: 0.5rem 0.6rem; }
+
+    .input-actions { gap: 0.2rem; }
+
+    .btn-action { width: 28px; height: 28px; font-size: 0.8rem; }
+
+    #messageInput { font-size: 0.85rem; }
+
+    .send-btn { width: 30px; height: 30px; }
 
     .motto { font-size: 1.5rem; }
 
