@@ -1,1 +1,9 @@
-{}
+{
+  "name": "dgljw-github-io",
+  "version": "1.0.0",
+  "description": "Personal blog with AI toolbox",
+  "private": true,
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
+  }
+}
