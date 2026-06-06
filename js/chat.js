@@ -1,116 +1,40 @@
 // AI 聊天逻辑
 
-/** 客户端联网搜索 - 浏览器端执行，绕过服务器 IP 限制 */
+/** 客户端联网搜索 - 通过 Vercel Tavily 代理（API Key 存于服务端环境变量） */
 async function searchWebClient(query) {
-    // 检测是否为新闻类查询
-    const isNews = /新闻|最新|今日|热搜|头条|事件|报道|爆料|发生了什么|出什么事|现在|目前|当前/.test(query);
-    
-    // 方案1: 通过 codetabs CORS 代理访问 Bing（最稳定）
     try {
-        const baseUrl = isNews ? 'https://www.bing.com/news/search' : 'https://www.bing.com/search';
-        const params = new URLSearchParams({
-            q: query,
-            setlang: 'zh-cn',
-            cc: 'cn'
+        const res = await fetch(CONFIG.TAVILY_SEARCH_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query }),
+            signal: AbortSignal.timeout(12000)
         });
-        if (isNews) {
-            params.set('qft', 'interval="7"'); // 最近7天
-        } else {
-            params.set('qft', 'filterui:age-lt1440'); // 最近24小时
-        }
-        
-        const targetUrl = `${baseUrl}?${params.toString()}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-        
-        const res = await fetch(proxyUrl, { 
-            signal: AbortSignal.timeout(10000),
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        if (!res.ok) throw new Error(`Proxy failed: ${res.status}`);
-        
-        const html = await res.text();
-        const results = [];
-        
-        if (isNews) {
-            // 解析 Bing 新闻结果
-            const titleRegex = /<a[^>]*class="title"[^>]*href="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<h2[^>]*>([\s\S]*?)<\/h2>/gi;
-            const snippetRegex = /<div[^>]*class="snippet"[^>]*>([\s\S]*?)<\/div>/gi;
-            
-            const titles = [...html.matchAll(titleRegex)];
-            const snippets = [...html.matchAll(snippetRegex)];
-            
-            for (let i = 0; i < Math.min(titles.length, snippets.length, 5); i++) {
-                const title = titles[i][2].replace(/<\/?[^>]+>/g, '').trim();
-                const url = titles[i][1];
-                const snippet = snippets[i][1].replace(/<\/?[^>]+>/g, '').trim();
-                if (title && url && snippet) {
-                    results.push(`[${title}](${url})\n${snippet}`);
-                }
-            }
-        } else {
-            // 解析普通 Bing 搜索结果 - 改进：优先使用 aria-label 或 h2 作为标题
-            const blockRegex = /<li class="b_algo"[^>]*>([\s\S]*?)<\/li>/gi;
-            let block;
-            while ((block = blockRegex.exec(html)) && results.length < 5) {
-                const b = block[1];
-                // 提取标题：优先 aria-label，其次 h2
-                let title = '';
-                const ariaMatch = b.match(/aria-label="([^"]+)"/);
-                if (ariaMatch) {
-                    title = ariaMatch[1];
-                } else {
-                    const h2Match = b.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
-                    if (h2Match) {
-                        title = h2Match[1].replace(/<[^>]+>/g, '').trim();
-                    }
-                }
-                
-                // 提取链接
-                const linkMatch = b.match(/<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>/i);
-                const snippetMatch = b.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-                
-                if (title && linkMatch && snippetMatch) {
-                    const snippet = snippetMatch[1].replace(/<[^>]+>/g, '').trim();
-                    if (snippet.length > 10) {
-                        results.push(`[${title}](${linkMatch[1]})\n${snippet}`);
-                    }
-                }
-            }
-        }
-        
-        if (results.length > 0) return results.join('\n\n');
-    } catch (e) {
-        console.log('Bing via allorigins failed:', e.message);
-    }
-    
-    // 方案2: DuckDuckGo HTML 备用
-    try {
-        const res = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=cn-zh`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            signal: AbortSignal.timeout(6000)
-        });
-        if (!res.ok) throw new Error('DDG failed');
-        const html = await res.text();
-        const results = [];
-        const linkRe = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-        const snippetRe = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-        const links = [...html.matchAll(linkRe)];
-        const snippets = [...html.matchAll(snippetRe)];
-        for (let i = 0; i < Math.min(links.length, snippets.length, 5); i++) {
-            const title = links[i][2].replace(/<\/?[^>]+>/g, '').trim();
-            const url = links[i][1].replace(/\/\/duckduckgo\.com\/l\/\?uddg=/, '').replace(/&rut=.*$/, '');
-            const finalUrl = url.startsWith('http') ? url : decodeURIComponent(url);
-            const snippet = snippets[i][1].replace(/<\/?[^>]+>/g, '').trim();
-            if (title && snippet) {
-                results.push(`[${title}](${finalUrl})\n${snippet}`);
-            }
-        }
-        if (results.length > 0) return results.join('\n\n');
-    } catch (e) {
-        console.log('DDG search failed:', e.message);
-    }
 
-    return null;
+        if (!res.ok) {
+            console.log('Tavily proxy error:', res.status);
+            return null;
+        }
+
+        const data = await res.json();
+        const lines = [];
+
+        if (data.answer) {
+            lines.push('📌 搜索摘要：\n' + data.answer + '\n');
+        }
+
+        if (data.results && data.results.length > 0) {
+            if (lines.length > 0) lines.push('---');
+            data.results.forEach(function (r) {
+                const snippet = r.content ? r.content.replace(/\n/g, ' ').substring(0, 300) : '';
+                lines.push('[' + r.title + '](' + r.url + ')\n' + snippet);
+            });
+        }
+
+        return lines.length > 0 ? lines.join('\n') : null;
+    } catch (e) {
+        console.log('Tavily search failed:', e.message);
+        return null;
+    }
 }
 
 const Chat = {
