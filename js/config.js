@@ -20,7 +20,7 @@ const CONFIG = {
     SIMILARITY_THRESHOLD: 0.7, // Jaccard 相似度阈值
     
     // 搜索配置
-    BING_SEARCH_ENABLED: true,
+    TAVILY_SEARCH_API: 'https://jianguo18.top/api/tavily-search',
     SEARCH_RESULTS: 5,
     
     // 表情配置
