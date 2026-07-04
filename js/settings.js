@@ -167,9 +167,9 @@ const Settings = {
         });
 
         // 清空所有数据
-        document.getElementById('clearAllData')?.addEventListener('click', () => {
-            if (confirm('⚠️ 确定清空所有数据吗？包括聊天记录、记忆、设置等，此操作不可撤销！')) {
-                localStorage.clear();
+        document.getElementById('clearAllData')?.addEventListener('click', async () => {
+            if (confirm('⚠️ 确定清空所有数据吗？包括聊天记录、记忆、设置、缓存等，此操作不可撤销！')) {
+                await Storage.clearAllCache();
                 location.reload();
             }
         });

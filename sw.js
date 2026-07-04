@@ -1,6 +1,6 @@
 // Service Worker - PWA 离线缓存
-const CACHE_NAME = 'deepseek-blog-v2';
-const RUNTIME_CACHE = 'deepseek-runtime-v2';
+const CACHE_NAME = 'deepseek-blog-v4';
+const RUNTIME_CACHE = 'deepseek-runtime-v4';
 
 const PRE_CACHE = [
     '/',

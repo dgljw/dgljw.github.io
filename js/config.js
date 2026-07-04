@@ -1,12 +1,13 @@
 // 配置文件
 const CONFIG = {
     // API 配置
-    API_BASE: 'https://jianguo18.top/api',
-    CHAT_API: 'https://jianguo18.top/api/chat',
-    SUMMARIZE_API: 'https://jianguo18.top/api/summarize',
-    EXTRACT_API: 'https://jianguo18.top/api/extract',
+    API_BASE: '/api',
+    CHAT_API: '/api/chat',
+    SUMMARIZE_API: '/api/summarize',
+    EXTRACT_API: '/api/extract',
     EMOJI_API: '/api/emoji-proxy',
-    VISION_API: 'https://jianguo18.top/api/vision',
+    VISION_API: '/api/vision',
+    STORAGE_API: '/api/storage',
     
     // DeepSeek 模型配置
     MODEL: 'deepseek-chat',
@@ -39,7 +40,8 @@ const CONFIG = {
         SYSTEM_PROMPT: 'system_prompt',
         CONTACTS: 'user_contacts',
         MOTTO: 'user_motto',
-        ANNOUNCEMENT: 'announcement_data'
+        ANNOUNCEMENT: 'announcement_data',
+        FILES: 'deepseek_files'
     },
     
     // 默认设置

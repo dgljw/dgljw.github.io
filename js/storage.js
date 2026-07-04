@@ -374,5 +374,32 @@ const Storage = {
             return messages.length;
         }
         return 0;
+    },
+
+    /**
+     * 清除所有本地缓存（包括 localStorage 和 Service Worker 缓存）
+     */
+    async clearAllCache() {
+        try {
+            localStorage.clear();
+            
+            if ('caches' in window) {
+                const cacheKeys = await caches.keys();
+                await Promise.all(cacheKeys.map(key => caches.delete(key)));
+            }
+            
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    await reg.unregister();
+                }
+            }
+            
+            sessionStorage.clear();
+            return true;
+        } catch (e) {
+            console.error('Clear cache error:', e);
+            return false;
+        }
     }
 };

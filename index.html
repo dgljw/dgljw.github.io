@@ -38,6 +38,11 @@
                     <span class="nav-text">角色扮演</span>
                     <div class="nav-underline"></div>
                 </button>
+                <button class="nav-item" data-view="drive">
+                    <span class="nav-icon">📁</span>
+                    <span class="nav-text">网盘</span>
+                    <div class="nav-underline"></div>
+                </button>
             </div>
             <button class="theme-toggle" id="themeToggle">
                 <span class="theme-icon">🌙</span>
@@ -246,6 +251,13 @@
                 </div>
             </div>
         </div>
+
+        <!-- 网盘视图 -->
+        <div class="view" id="driveView">
+            <div class="drive-container" id="driveContainer">
+                <!-- 网盘内容将动态生成 -->
+            </div>
+        </div>
     </main>
 
     <!-- 设置面板 -->
@@ -307,6 +319,7 @@
     <script src="/js/extract.js"></script>
     <script src="/js/settings.js"></script>
     <script src="/js/ui.js"></script>
+    <script src="/js/drive.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>
