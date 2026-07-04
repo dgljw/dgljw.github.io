@@ -26,16 +26,6 @@
             Settings.init();
             UI.checkWeChatEnv();
 
-            // 网盘模块初始化（视图切换时）
-            document.addEventListener('viewChanged', (e) => {
-                if (e.detail.view === 'drive') {
-                    Drive.init();
-                }
-            });
-            if (Router.getCurrentView() === 'drive') {
-                Drive.init();
-            }
-
             // 全局事件
             this.bindGlobalEvents();
 

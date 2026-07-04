@@ -7,7 +7,6 @@ const CONFIG = {
     EXTRACT_API: '/api/extract',
     EMOJI_API: '/api/emoji-proxy',
     VISION_API: '/api/vision',
-    STORAGE_API: '/api/storage',
     
     // DeepSeek 模型配置
     MODEL: 'deepseek-chat',
@@ -40,8 +39,7 @@ const CONFIG = {
         SYSTEM_PROMPT: 'system_prompt',
         CONTACTS: 'user_contacts',
         MOTTO: 'user_motto',
-        ANNOUNCEMENT: 'announcement_data',
-        FILES: 'deepseek_files'
+        ANNOUNCEMENT: 'announcement_data'
     },
     
     // 默认设置

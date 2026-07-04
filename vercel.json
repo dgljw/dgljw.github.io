@@ -9,8 +9,7 @@
         "api/emoji-proxy.js": { "memory": 256, "maxDuration": 15 },
         "api/vision.js": { "memory": 512, "maxDuration": 30 },
         "api/debug.js": { "memory": 256, "maxDuration": 10 },
-        "api/tavily-search.js": { "memory": 256, "maxDuration": 15 },
-        "api/storage.js": { "memory": 512, "maxDuration": 30 }
+        "api/tavily-search.js": { "memory": 256, "maxDuration": 15 }
     },
     "rewrites": [
         { "source": "/api/chat", "destination": "/api/chat.js" },
@@ -19,8 +18,7 @@
         { "source": "/api/emoji-proxy", "destination": "/api/emoji-proxy.js" },
         { "source": "/api/vision", "destination": "/api/vision.js" },
         { "source": "/api/debug", "destination": "/api/debug.js" },
-        { "source": "/api/tavily-search", "destination": "/api/tavily-search.js" },
-        { "source": "/api/storage", "destination": "/api/storage.js" }
+        { "source": "/api/tavily-search", "destination": "/api/tavily-search.js" }
     ],
     "headers": [
         {

@@ -2,7 +2,7 @@
 
 const Router = {
     currentView: 'home',
-    views: ['home', 'chat', 'extract', 'drive'],
+    views: ['home', 'chat', 'extract'],
     
     /**
      * 初始化路由
