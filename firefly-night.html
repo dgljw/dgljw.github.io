@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>萤火虫之夜 — Firefly Night</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #06060B;
+  overflow: hidden;
+  font-family: 'Georgia', 'Noto Serif SC', serif;
+  cursor: crosshair;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+canvas { display: block; }
+
+.overlay {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  text-align: center;
+  z-index: 10;
+}
+
+.overlay .title {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  color: rgba(255, 220, 140, 0.9);
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 40px rgba(255, 180, 60, 0.6), 0 0 80px rgba(255, 140, 30, 0.3);
+  margin-bottom: 8px;
+}
+
+.overlay .hint {
+  font-size: 0.75rem;
+  color: rgba(255, 220, 140, 0.4);
+  letter-spacing: 0.08em;
+  animation: fadeHint 4s ease-in-out infinite;
+}
+
+@keyframes fadeHint {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.ripple {
+  position: fixed;
+  pointer-events: none;
+  border: 1px solid rgba(255, 200, 100, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: rippleOut 1.5s ease-out forwards;
+  z-index: 5;
+}
+
+@keyframes rippleOut {
+  0% { width: 0; height: 0; opacity: 0.8; }
+  100% { width: 200px; height: 200px; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ripple { animation: none; display: none; }
+}
+</style>
+<!-- Vercel Web Analytics -->
+<script type="module" src="/js/analytics.js"></script>
+</head>
+<body>
+<canvas id="garden"></canvas>
+<div class="overlay">
+  <div class="title">萤 火 虫 之 夜</div>
+  <div class="hint">移动鼠标引路 · 点击唤醒萤火虫</div>
+</div>
+
+<script>
+const canvas = document.getElementById('garden');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const mouse = { x: W / 2, y: H / 2, active: false };
+const fireflies = [];
+const MAX = 120;
+const TRAIL_LENGTH = 18;
+let trail = [];
+
+class Firefly {
+  constructor(x, y) {
+    this.baseX = x;
+    this.baseY = y;
+    this.x = x;
+    this.y = y;
+    this.vx = 0;
+    this.vy = 0;
+    this.phase = Math.random() * Math.PI * 2;
+    this.speed = 0.3 + Math.random() * 0.7;
+    this.size = 1.0 + Math.random() * 1.8;
+    this.hue = 40 + Math.random() * 20;
+    this.glowRadius = 30 + Math.random() * 60;
+    this.wanderRadius = 30 + Math.random() * 80;
+  }
+
+  update(dt) {
+    this.phase += dt * this.speed;
+    const wx = Math.sin(this.phase * 1.3) * this.wanderRadius;
+    const wy = Math.cos(this.phase * 1.7) * this.wanderRadius * 0.7;
+
+    const tx = this.baseX + wx;
+    const ty = this.baseY + wy;
+
+    this.vx += (tx - this.x) * 0.01;
+    this.vy += (ty - this.y) * 0.01;
+
+    if (mouse.active) {
+      const dx = mouse.x - this.x;
+      const dy = mouse.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const attraction = Math.max(0, 1 - dist / 350);
+      this.vx += dx * attraction * 0.03;
+      this.vy += dy * attraction * 0.03;
+    }
+
+    this.vx *= 0.92;
+    this.vy *= 0.92;
+    this.x += this.vx;
+    this.y += this.vy;
+  }
+
+  draw(ctx, time) {
+    const pulse = Math.sin(time * 3 + this.phase) * 0.3 + 0.7;
+    const alpha = pulse * 0.9;
+
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.glowRadius * pulse);
+    grad.addColorStop(0, `hsla(${this.hue}, 100%, 85%, ${alpha})`);
+    grad.addColorStop(0.15, `hsla(${this.hue}, 100%, 75%, ${alpha * 0.7})`);
+    grad.addColorStop(0.4, `hsla(${this.hue}, 80%, 50%, ${alpha * 0.2})`);
+    grad.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.glowRadius * pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = `hsla(${this.hue}, 60%, 95%, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * pulse, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function spawnFirefly(x, y) {
+  const fx = x + (Math.random() - 0.5) * 120;
+  const fy = y + (Math.random() - 0.5) * 120;
+  const ff = new Firefly(
+    Math.max(50, Math.min(W - 50, fx)),
+    Math.max(50, Math.min(H - 50, fy))
+  );
+  fireflies.push(ff);
+  if (fireflies.length > MAX) fireflies.shift();
+}
+
+for (let i = 0; i < 40; i++) {
+  spawnFirefly(Math.random() * W, Math.random() * H);
+}
+
+canvas.addEventListener('mousemove', e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  mouse.active = true;
+  trail.push({ x: e.clientX, y: e.clientY, life: TRAIL_LENGTH });
+  if (trail.length > TRAIL_LENGTH) trail.shift();
+});
+
+canvas.addEventListener('mouseleave', () => { mouse.active = false; });
+
+canvas.addEventListener('click', e => {
+  for (let i = 0; i < 5; i++) {
+    spawnFirefly(e.clientX, e.clientY);
+  }
+
+  const ripple = document.createElement('div');
+  ripple.className = 'ripple';
+  ripple.style.left = e.clientX + 'px';
+  ripple.style.top = e.clientY + 'px';
+  document.body.appendChild(ripple);
+  ripple.addEventListener('animationend', () => ripple.remove());
+});
+
+let lastTime = performance.now();
+function loop(time) {
+  const dt = Math.min((time - lastTime) / 1000, 0.1);
+  lastTime = time;
+
+  ctx.fillStyle = 'rgba(6, 6, 11, 0.25)';
+  ctx.fillRect(0, 0, W, H);
+
+  for (let i = trail.length - 1; i > 0; i--) {
+    const a = trail[i];
+    const b = trail[i - 1];
+    const alpha = (i / TRAIL_LENGTH) * 0.15;
+    ctx.strokeStyle = `rgba(255, 200, 120, ${alpha})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < trail.length; i++) {
+    trail[i].life -= 0.06;
+  }
+  trail = trail.filter(p => p.life > 0);
+
+  for (const ff of fireflies) {
+    ff.update(dt);
+    ff.draw(ctx, time * 0.001);
+  }
+
+  for (let i = 0; i < fireflies.length; i++) {
+    for (let j = i + 1; j < fireflies.length; j++) {
+      const dx = fireflies[i].x - fireflies[j].x;
+      const dy = fireflies[i].y - fireflies[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        const alpha = (1 - dist / 100) * 0.12;
+        ctx.strokeStyle = `rgba(255, 200, 100, ${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(fireflies[i].x, fireflies[i].y);
+        ctx.lineTo(fireflies[j].x, fireflies[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+
+window.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  mouse.x = touch.clientX;
+  mouse.y = touch.clientY;
+  mouse.active = true;
+  trail.push({ x: touch.clientX, y: touch.clientY, life: TRAIL_LENGTH });
+  if (trail.length > TRAIL_LENGTH) trail.shift();
+}, { passive: false });
+
+window.addEventListener('touchend', () => { mouse.active = false; });
+window.addEventListener('touchstart', e => {
+  for (const touch of e.touches) {
+    for (let i = 0; i < 3; i++) {
+      spawnFirefly(touch.clientX, touch.clientY);
+    }
+  }
+});
+</script>
+</body>
+</html>
