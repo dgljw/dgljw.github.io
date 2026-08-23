@@ -98,7 +98,7 @@
     transform: translateX(-50%) scale(0.6);
     z-index: 9; pointer-events: none; opacity: 0;
   }
-  #catCard.show { animation: catIn .7s cubic-bezier(.18,1.45,.4,1) forwards; }
+  #catCard.show { animation: catIn .7s cubic-bezier(.18,1.45,.4,1) forwards; pointer-events: auto; }
   #catCard.bye { animation: catOut .6s ease forwards; }
   @keyframes catIn {
     0% { opacity: 0; transform: translateX(-50%) scale(0.5) rotate(-5deg); }
@@ -138,6 +138,17 @@
   }
   .cat-line { margin-top: 5px; font-size: 14px; font-weight: 700; color: #8A6A5C; letter-spacing: 1px; }
   .cat-kaomoji { margin-top: 3px; font-size: 15px; color: #E77C9C; letter-spacing: 1px; }
+  .cat-ok {
+    margin-top: 10px; padding: 8px 36px;
+    border: none; border-radius: 999px;
+    background: linear-gradient(135deg, #FF7AA2, #FF9A62);
+    color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 3px;
+    font-family: inherit; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(255,120,160,.4);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .cat-ok:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 10px 22px rgba(255,120,160,.5); }
+  .cat-ok:active { transform: scale(0.94); }
 </style>
 </head>
 <body>
@@ -171,6 +182,7 @@
     <div class="cat-line">谢谢你陪我玩了这么久～</div>
     <div class="cat-kaomoji">(=^･ω･^=)ﾉ♡ (=￣ω￣=)ゞ</div>
     <div class="cat-line">你是最棒的两脚兽 (｡♥ω♥｡)</div>
+    <button id="catOk" class="cat-ok">好哒！</button>
   </div>
 </div>
 
@@ -190,6 +202,7 @@ var startBtn = document.getElementById('startBtn');
 var restartBtn = document.getElementById('restartBtn');
 var pityEl = document.getElementById('pity');
 var catCardEl = document.getElementById('catCard');
+var catOkEl = document.getElementById('catOk');
 var catTimer = 0;
 
 var FONT = '"PingFang SC","Microsoft YaHei","Noto Sans CJK SC","WenQuanYi Micro Hei",sans-serif';
@@ -282,7 +295,10 @@ function spawnNext() {
     else if (sinceLucky >= 4 && roll < 0.12) { next.lucky = 'purple'; sinceLucky = 0; }
   }
   updatePityUI(next.lucky === 'gold');
-  player.look = (next.x > cur.x) ? { x: 1, y: -0.7 } : { x: -1, y: -0.7 };
+  // 视线方向：指向下一块的屏幕空间单位向量（小猫明显朝向要跳的路径）
+  var lp = proj(next.x - cur.x, next.y - cur.y, 0);
+  var ll = Math.hypot(lp.x, lp.y) || 1;
+  player.look = { x: lp.x / ll, y: lp.y / ll };
   camTarget();
 }
 function onPlat(pf, x, y) {
@@ -376,20 +392,22 @@ function updatePityUI(flash) {
     pityEl.classList.add('pop');
   }
 }
-// 200 分：弹出小猫感谢卡（不阻挡操作，4.2 秒后自动退场）
+// 200 分：弹出小猫感谢卡（卡片区域防误触，点"好哒！"提前退场，否则 4.2 秒自动退场）
 function showCatCard() {
   clearTimeout(catTimer);
   catCardEl.classList.remove('bye');
   catCardEl.classList.add('show');
   pityEl.style.opacity = '0'; // 庆典期间先让位给感谢卡
+  catTimer = setTimeout(dismissCatCard, 4200);
+}
+function dismissCatCard() {
+  clearTimeout(catTimer);
+  catCardEl.classList.remove('show');
+  catCardEl.classList.add('bye');
   catTimer = setTimeout(function () {
-    catCardEl.classList.remove('show');
-    catCardEl.classList.add('bye');
-    catTimer = setTimeout(function () {
-      catCardEl.classList.remove('bye');
-      pityEl.style.opacity = '1';
-    }, 700);
-  }, 4200);
+    catCardEl.classList.remove('bye');
+    pityEl.style.opacity = '1';
+  }, 700);
 }
 
 /* ================= 音效（WebAudio 合成） ================= */
@@ -588,8 +606,16 @@ restartBtn.addEventListener('click', function () {
   restart();
   try { if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); } } catch (e) {}
 });
+catOkEl.addEventListener('click', function () {
+  dismissCatCard();
+  try { if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); } } catch (e) {}
+  // 回应小猫：轻快的两声喵铃
+  tone(880, 0.1, 'sine', 0.12);
+  tone(1318.5, 0.16, 'sine', 0.12, null, 0.09);
+});
 window.addEventListener('pointerdown', function (e) {
-  if (e.target && e.target.closest && e.target.closest('button')) { return; }
+  // 按钮与感谢卡区域不触发蓄力，避免 200 分庆典时误触起跳
+  if (e.target && e.target.closest && (e.target.closest('button') || e.target.closest('#catCard'))) { return; }
   e.preventDefault();
   onPress();
 });
@@ -1169,11 +1195,16 @@ function drawPlayer() {
     ctx.translate(0, 22);
   }
   var lx = player.look.x, ly = player.look.y;
+  var focus = state === 'charging' ? 1.35 : 1; // 蓄力时盯得更紧
+  var ex = lx * 1.6 * focus, ey = ly * 1.2 * focus; // 眼珠偏移
+  var fx = lx * 1.2 * focus, fy = ly * 0.8 * focus; // 整脸偏移
+  var side = lx >= 0 ? -1 : 1; // 尾巴甩在视线反方向
 
   // 尾巴（在身体后方，轻轻摆动，蓄力时摇得更快）
   var wag = Math.sin(t * (state === 'charging' ? 14 : 5)) * 0.5;
   ctx.save();
-  ctx.translate(10, -8);
+  ctx.translate(10 * side, -8);
+  ctx.scale(side, 1);
   ctx.rotate(-0.5 + wag);
   ctx.strokeStyle = '#E08A33';
   ctx.lineWidth = 5;
@@ -1242,6 +1273,9 @@ function drawPlayer() {
   ctx.beginPath(); ctx.moveTo(-2.5, -43.5); ctx.lineTo(-2, -39.5); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(2.5, -43.5); ctx.lineTo(2, -39.5); ctx.stroke();
 
+  // 脸部整体朝视线方向偏移，明显看向下一个方块
+  ctx.save();
+  ctx.translate(fx, fy);
   // 嘴部浅色毛
   ctx.fillStyle = '#FFF3DE';
   ctx.beginPath();
@@ -1250,7 +1284,6 @@ function drawPlayer() {
 
   // 眼睛（偶尔眨眼，视线朝向下一个方块）
   var blink = (t % 3.4) > 3.25;
-  var ex = lx * 1.2, ey = ly * 0.8;
   if (blink) {
     ctx.strokeStyle = '#4A3123';
     ctx.lineWidth = 1.6;
@@ -1298,6 +1331,7 @@ function drawPlayer() {
   ctx.fillStyle = 'rgba(255,150,160,0.5)';
   ctx.beginPath(); ctx.ellipse(-8.4, -28.6, 2.2, 1.4, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(8.4, -28.6, 2.2, 1.4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 
   // 前爪
   ctx.fillStyle = '#F9B45F';
