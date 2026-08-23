@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>坚果 | AI 工具箱</title>
+    <meta name="description" content="一个轻量、极简的个人博客，集成 AI 聊天和预设词提取工具">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/assets/icons/icon-192.png" type="image/png">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <!-- Vercel Web Analytics -->
+    <script type="module" src="/js/analytics.js"></script>
+</head>
+<body>
+    <!-- 导航菜单 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-text">坚果</span>
+                <div class="logo-dot"></div>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-item active" data-view="home">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">主页</span>
+                    <div class="nav-underline"></div>
+                </button>
+                <button class="nav-item" data-view="chat">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-text">AI 聊天</span>
+                    <div class="nav-underline"></div>
+                </button>
+                <button class="nav-item" data-view="extract">
+                    <span class="nav-icon">🎭</span>
+                    <span class="nav-text">角色扮演</span>
+                    <div class="nav-underline"></div>
+                </button>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                <span class="theme-icon">🌙</span>
+            </button>
+            <button class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 主页视图 -->
+        <div class="view active" id="homeView">
+            <div class="home-container">
+                <!-- 头像区域 -->
+                <div class="avatar-section">
+                    <div class="avatar-wrapper">
+                        <div class="avatar-glow"></div>
+                        <div class="avatar" id="userAvatar">
+                            <div class="avatar-placeholder">🌰</div>
+                            <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                        </div>
+                        <button class="avatar-edit" id="editAvatar">✏️</button>
+                    </div>
+                </div>
+
+                <!-- 座右铭 -->
+                <div class="motto-section">
+                    <h1 class="motto" id="userMotto" contenteditable="true">
+                        探索未知，创造可能
+                    </h1>
+                    <div class="motto-edit-hint">点击编辑</div>
+                </div>
+
+                <!-- 联系方式 -->
+                <div class="contacts-section">
+                    <h2 class="section-title">
+                        <span class="title-line"></span>
+                        <span class="title-text">联系我</span>
+                        <span class="title-line"></span>
+                    </h2>
+                    <div class="contacts-grid">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+
+                <!-- 公告栏 -->
+                <div class="announcement-section">
+                    <h2 class="section-title">
+                        <span class="title-line"></span>
+                        <span class="title-text">公告栏</span>
+                        <span class="title-line"></span>
+                    </h2>
+                    <div class="announcement-card" id="announcementCard">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- AI 聊天视图 -->
+        <div class="view" id="chatView">
+            <div class="chat-container">
+                <!-- 聊天头部 -->
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <div class="ai-avatar" id="aiAvatar">
+                            <span class="avatar-emoji">🤖</span>
+                        </div>
+                        <div>
+                            <h2 id="aiName">DeepSeek 记忆管家</h2>
+                            <div class="chat-status" id="chatStatus">
+                                <span class="status-dot online"></span>
+                                <span>在线</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="btn-icon" id="settingsBtn" title="设置">
+                            ⚙️
+                        </button>
+                        <button class="btn-icon" id="memoryBtn" title="记忆管理">
+                            🧠
+                        </button>
+                        <button class="btn-icon" id="exportBtn" title="导出聊天">
+                            📤
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 消息列表 -->
+                <div class="messages-container" id="messagesContainer">
+                    <div class="welcome-message">
+                        <div class="message-bubble ai">
+                            <div class="message-content">
+                                <p>你好！我是 DeepSeek 记忆管家，我可以：</p>
+                                <ul>
+                                    <li>记住我们的对话内容</li>
+                                    <li>帮你搜索网络信息</li>
+                                    <li>智能总结和压缩记忆</li>
+                                    <li>搜索表情包（输入 <code>/表情 关键词</code>）</li>
+                                </ul>
+                                <p>开始聊天吧！</p>
+                            </div>
+                            <div class="message-time">刚刚</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 输入区域 -->
+                <div class="input-container">
+                    <div class="input-actions">
+                        <button class="btn-action" id="imageUploadBtn" title="上传图片">
+                            <span>📷</span>
+                            <span class="feature-status" id="status-image"></span>
+                        </button>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                        <button class="btn-action" id="webSearchToggle" title="联网搜索">
+                            <span>🌐</span>
+                            <span class="feature-status" id="status-search"></span>
+                        </button>
+                        <button class="btn-action" id="emojiToggle" title="表情包自动匹配">
+                            <span>😄</span>
+                            <span class="feature-status" id="status-emoji"></span>
+                        </button>
+                        <button class="btn-action" id="addMemoryBtn" title="添加记忆">
+                            <span>💾</span>
+                            <span class="feature-status" id="status-memory"></span>
+                        </button>
+                    </div>
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="输入消息... (支持 Markdown，输入 /表情 关键词 搜索表情包)"
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn">
+                            <span class="send-icon">➤</span>
+                            <div class="send-wave"></div>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <div class="typing-indicator" id="typingIndicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <div class="token-counter" id="tokenCounter">
+                            Tokens: 0
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 角色扮演视图 -->
+        <div class="view" id="extractView">
+            <div class="extract-container">
+                <div class="extract-header">
+                    <h2>🎭 角色扮演提示词生成</h2>
+                    <p class="extract-subtitle">输入作品和角色，AI 生成适合角色扮演的完整预设词</p>
+                </div>
+
+                <div class="extract-input-section">
+                    <div class="extract-form">
+                        <input 
+                            id="extractWork" 
+                            class="extract-input"
+                            placeholder="输入作品名，如：红楼梦、火影忍者..."
+                        >
+                        <span class="extract-sep">×</span>
+                        <input 
+                            id="extractChar" 
+                            class="extract-input"
+                            placeholder="输入角色名，如：林黛玉、鸣人..."
+                        >
+                    </div>
+
+                    <button class="extract-btn" id="extractBtn" disabled>
+                        <span class="btn-text">生成预设词</span>
+                        <div class="btn-spinner">
+                            <div class="spinner-dot"></div>
+                            <div class="spinner-dot"></div>
+                            <div class="spinner-dot"></div>
+                        </div>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+
+                <div class="extract-results-section">
+                    <div class="results-header">
+                        <h3>生成结果</h3>
+                        <div class="results-count" id="resultsCount">0 个角色</div>
+                    </div>
+                    <div class="results-grid" id="resultsGrid">
+                        <div class="empty-state">
+                            <div class="empty-icon">🎬</div>
+                            <p>角色扮演提示词将显示在这里</p>
+                            <p class="empty-hint">提示词可直接复制到 AI 聊天中使用</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-overlay"></div>
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2>设置</h2>
+                <button class="close-btn" id="closeSettings">×</button>
+            </div>
+            <div class="settings-body">
+                <!-- 设置项将动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 记忆管理面板 -->
+    <div class="memory-panel" id="memoryPanel">
+        <div class="memory-overlay"></div>
+        <div class="memory-content">
+            <div class="memory-header">
+                <h2>记忆管理</h2>
+                <button class="close-btn" id="closeMemory">×</button>
+            </div>
+            <div class="memory-body">
+                <!-- 记忆项将动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 微信引导弹窗 -->
+    <div class="wechat-modal" id="wechatModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>微信环境检测</h3>
+            </div>
+            <div class="modal-body">
+                <p>检测到您在微信中访问，部分功能可能受限。</p>
+                <p>建议在浏览器中打开以获得最佳体验。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="closeWechatModal">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本引入 -->
+    <script src="/js/config.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/router.js"></script>
+    <script src="/js/home.js"></script>
+    <script src="/assets/avatars.js"></script>
+    <script src="/js/chat.js"></script>
+    <script src="/js/memory.js"></script>
+    <script src="/js/extract.js"></script>
+    <script src="/js/settings.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
